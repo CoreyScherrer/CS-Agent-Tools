@@ -42,6 +42,16 @@ move that file out of `data/` rather than overriding.
 
 To share a pattern without content: `python3 -m ma export --redact`.
 
+To move an archive between machines, use export/import — **not git**:
+
+```bash
+python3 -m ma export --out ~/ma-backup.json
+python3 -m ma import ~/ma-backup.json
+```
+
+Plain text, reviewable before it lands, idempotent by id. A database committed
+to git can never be removed from its history.
+
 ## Capturing
 
 Capture when something would be expensive to rediscover — a decision and its
@@ -73,11 +83,13 @@ python3 -m ma recall --project <name>     # ranked context within a token budget
 python3 -m ma search "<term>"             # keyword search
 python3 -m ma context system:checkout     # everything linked to one entity
 python3 -m ma status                      # backend and counts
+python3 -m ma export --out <path>         # backup / transfer (plain text)
+python3 -m ma import <path>               # load an export; idempotent by id
 ```
 
 ## Repo map
 
-```
+```text
 ma/
   config.py            layered config: defaults < example < local < env
   storage/
@@ -90,10 +102,15 @@ ma/
     repository.py      validation, link resolution, recall assembly, export
     doctor.py          environment probes
   cli/main.py          argparse CLI
-scripts/               session hooks + pre-commit guard
+scripts/               session hooks, pre-commit guard, wiki publisher
+docs/wiki/             the wiki (source of truth; published by publish-wiki.sh)
 docs/specs/            design documents
+docs/decisions/        ADRs — read before undoing a decision
 tests/                 stdlib unittest
 ```
+
+**Documentation lives in `docs/wiki/`.** Update it there, not on GitHub's wiki
+UI — the UI edits a copy that `scripts/publish-wiki.sh` will overwrite.
 
 ## Conventions
 

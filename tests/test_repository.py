@@ -145,6 +145,66 @@ class TestExport(RepoCase):
         self.assertTrue(data["redacted"])
 
 
+class TestImport(RepoCase):
+    """Export/import is how content moves between machines — it must round-trip."""
+
+    def _second_repo(self):
+        backend = SQLiteBackend(os.path.join(self._tmp.name, "second.db"))
+        backend.init_schema()
+        self.addCleanup(backend.close)
+        return Repository(backend, CFG)
+
+    def test_round_trip_preserves_memories_entities_and_links(self):
+        self.repo.capture("decision", "keep this", "with reasoning",
+                          tags=["a"], links=[("person", "Jane"), ("system", "checkout")])
+        self.repo.capture("learning", "and this", project="p1")
+
+        target = self._second_repo()
+        stats = target.import_data(self.repo.export())
+
+        self.assertEqual(stats["memories"], 2)
+        self.assertEqual(stats["links"], 2)
+        self.assertEqual(len(target.backend.list_memories()), 2)
+        found = target.entity_context("system", "checkout")
+        self.assertEqual(len(found["memories"]), 1)
+
+    def test_import_is_idempotent(self):
+        self.repo.capture("decision", "once", links=[("person", "Jane")])
+        payload = self.repo.export()
+
+        target = self._second_repo()
+        target.import_data(payload)
+        second = target.import_data(payload)
+
+        self.assertEqual(second["memories"], 0)
+        self.assertEqual(len(target.backend.list_memories()), 1)
+        self.assertEqual(len(target.backend.list_entities("person")), 1)
+
+    def test_importing_into_itself_changes_nothing(self):
+        self.repo.capture("learning", "solo")
+        self.repo.import_data(self.repo.export())
+        self.assertEqual(len(self.backend.list_memories()), 1)
+
+    def test_redacted_export_is_rejected(self):
+        self.repo.capture("decision", "secret")
+        with self.assertRaises(ValidationError) as ctx:
+            self._second_repo().import_data(self.repo.export(redact=True))
+        self.assertIn("redacted", str(ctx.exception))
+
+    def test_empty_payload_is_harmless(self):
+        self.assertEqual(self.repo.import_data({})["memories"], 0)
+
+    def test_malformed_memory_is_skipped_not_fatal(self):
+        payload = {"memories": [{"id": "bad"}, {"id": "ok", "type": "learning", "title": "fine"}]}
+        stats = self.repo.import_data(payload)
+        self.assertEqual(stats["memories"], 1)
+        self.assertEqual(stats["skipped"], 1)
+
+    def test_export_includes_links_section(self):
+        self.repo.capture("decision", "linked", links=[("person", "Jane")])
+        self.assertEqual(len(self.repo.export()["links"]), 1)
+
+
 class TestHelpers(unittest.TestCase):
     def test_parse_link_spec(self):
         self.assertEqual(parse_link_spec("person:Jane Doe"), ("person", "Jane Doe"))

@@ -233,6 +233,24 @@ def _as_markdown(data):
     return "\n".join(lines)
 
 
+def cmd_import(args):
+    repo, _ = _repo(args)
+    try:
+        with open(args.path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except OSError as exc:
+        print("error: cannot read {}: {}".format(args.path, exc), file=sys.stderr)
+        return 1
+    except ValueError as exc:
+        print("error: {} is not valid JSON: {}".format(args.path, exc), file=sys.stderr)
+        return 1
+
+    stats = repo.import_data(data, skip_existing=not args.replace)
+    print("imported {} memories, {} entities, {} links ({} skipped)".format(
+        stats["memories"], stats["entities"], stats["links"], stats["skipped"]))
+    return 0
+
+
 def cmd_status(args):
     repo, cfg = _repo(args)
     info = repo.status()
@@ -352,6 +370,13 @@ def build_parser():
     p.add_argument("--redact", action="store_true", help="keep structure, drop content")
     p.add_argument("--out")
     p.set_defaults(func=cmd_export)
+
+    p = sub.add_parser("import", parents=[common],
+                       help="load an export file (how content moves between machines)")
+    p.add_argument("path", help="path to a JSON export")
+    p.add_argument("--replace", action="store_true",
+                   help="re-add memories whose id already exists (default: skip)")
+    p.set_defaults(func=cmd_import)
 
     p = sub.add_parser("status", parents=[common], help="backend and counts")
     p.set_defaults(func=cmd_status)

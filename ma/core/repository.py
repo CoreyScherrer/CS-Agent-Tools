@@ -144,12 +144,18 @@ class Repository:
         ``redact`` keeps structure and metadata but drops free text, so a schema
         or usage pattern can be shared without sharing any work content.
         """
+        memories = self.backend.list_memories(limit=100000, include_expired=True)
+        links = []
+        for memory in memories:
+            links.extend(self.backend.links_for_memory(memory["id"]))
+
         data = {
             "exported_at": now_iso(),
-            "memories": self.backend.list_memories(limit=100000, include_expired=True),
+            "memories": memories,
             "people": self.backend.list_entities("person", limit=100000),
             "systems": self.backend.list_entities("system", limit=100000),
             "work_items": self.backend.list_entities("item", limit=100000),
+            "links": links,
         }
         if redact:
             data["redacted"] = True
@@ -162,6 +168,59 @@ class Repository:
                         if field in row and row[field]:
                             row[field] = "[redacted]"
         return data
+
+    def import_data(self, data, skip_existing=True):
+        """Load an ``export()`` payload into this archive.
+
+        This is how content moves between machines. The export file is plain
+        text, so it can be reviewed before it lands — unlike a database blob,
+        which is why the archive itself is never committed to git.
+
+        Idempotent by id: re-importing the same file changes nothing, so a
+        partial or repeated import is safe.
+        """
+        if data.get("redacted"):
+            raise ValidationError(
+                "this export was redacted; its content was removed and cannot be imported"
+            )
+
+        existing = {m["id"] for m in self.backend.list_memories(limit=1000000,
+                                                               include_expired=True)}
+        stats = {"memories": 0, "entities": 0, "links": 0, "skipped": 0}
+
+        for kind, key in (("person", "people"), ("system", "systems"), ("item", "work_items")):
+            known = {e["id"] for e in self.backend.list_entities(kind, limit=1000000)}
+            for row in data.get(key, []):
+                if row.get("id") in known:
+                    continue
+                try:
+                    self.backend.add_entity(kind, **row)
+                    stats["entities"] += 1
+                except Exception:
+                    # One malformed row must not abort a transfer.
+                    stats["skipped"] += 1
+
+        for memory in data.get("memories", []):
+            if skip_existing and memory.get("id") in existing:
+                stats["skipped"] += 1
+                continue
+            payload = dict(memory)
+            payload["tags"] = decode_tags(payload.get("tags"))
+            payload["pinned"] = bool(payload.get("pinned"))
+            try:
+                self.backend.add_memory(**payload)
+                stats["memories"] += 1
+            except Exception:
+                stats["skipped"] += 1
+
+        for link in data.get("links", []):
+            try:
+                self.backend.add_link(link["memory_id"], link["entity_type"], link["entity_id"])
+                stats["links"] += 1
+            except Exception:
+                stats["skipped"] += 1
+
+        return stats
 
     def status(self):
         return {

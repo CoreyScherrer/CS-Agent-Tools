@@ -11,7 +11,7 @@ beyond Python 3.9+ from the standard library.
 ## Setup
 
 ```bash
-git clone <this-repo> memory-archive
+git clone https://github.com/CoreyScherrer/kroger.git memory-archive
 cd memory-archive
 
 python3 -m ma doctor --write   # probe the machine, choose a backend
@@ -71,11 +71,26 @@ is enforced structurally, not by convention:
 Nothing in this framework makes an outbound network call. No summarization, no
 embeddings, no telemetry — captured content does not leave the machine.
 
+### Backup and cross-machine transfer
+
+Git is the wrong tool for moving an archive — a database is a binary blob that
+bloats history and cannot be removed once committed. Use export/import, which
+produces plain text you can review before it lands:
+
+```bash
+python3 -m ma export --out ~/ma-backup.json   # source machine
+python3 -m ma import ~/ma-backup.json         # target machine
+```
+
+Import is idempotent by id, so re-running it changes nothing. Memories,
+entities and their links all survive the round trip. Move the file the way you
+would move any work document.
+
 ## Ranking
 
 With no embeddings, recall quality is this scoring function:
 
-```
+```text
 score = importance × recency_decay × project_match
 ```
 
@@ -87,8 +102,8 @@ deterministic: same inputs, same ordering, verifiable without a model.
 
 Two backends behind one seam, both running the same conformance suite:
 
-| | SQLite | PostgreSQL |
-|---|---|---|
+| Aspect | SQLite | PostgreSQL |
+| --- | --- | --- |
 | dependency | none (stdlib) | `psycopg` |
 | use when | anywhere | server available and permitted |
 | shared access | single machine | multi-machine capable |
@@ -126,4 +141,16 @@ additive later rather than a refactor: semantic search, LLM summarization,
 knowledge-graph edges, MCP server, background sync daemon, web UI, shared
 multi-user deployment.
 
-Design rationale: `docs/specs/2026-08-07-memory-archive-framework-design.md`
+## Documentation
+
+- **Wiki:** `docs/wiki/` — [Home](docs/wiki/Home.md) · [Setup](docs/wiki/Setup.md) ·
+  [Daily Use](docs/wiki/Daily-Use.md) · [Data Boundary](docs/wiki/Data-Boundary.md) ·
+  [Architecture](docs/wiki/Architecture.md) ·
+  [Troubleshooting](docs/wiki/Troubleshooting.md) · [Roadmap](docs/wiki/Roadmap.md)
+- **Setup on a restricted machine:** `docs/SETUP-NEW-MACHINE.md`
+- **Design rationale:** `docs/specs/2026-08-07-memory-archive-framework-design.md`
+- **Decisions:** `docs/decisions/ADR-0001-phase-1-scope-and-constraints.md`
+
+`docs/wiki/` is the source of truth and is version-controlled with the code.
+`scripts/publish-wiki.sh` copies it to the GitHub wiki (which must be
+initialised once through the web UI first).
