@@ -1,5 +1,7 @@
 # Memory Archive Framework
 
+_Instructions to pass to my work environment._
+
 Persistent memory for AI coding sessions. Captures decisions, learnings and
 context into a local database and injects the relevant parts back at the start of
 the next session.
