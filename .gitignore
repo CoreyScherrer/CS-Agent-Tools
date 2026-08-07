@@ -1,0 +1,33 @@
+# Captured content NEVER enters git. The framework is shareable; what it
+# captures is not. Enforced structurally by scripts/pre-commit-guard.sh,
+# installed by `ma init`.
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Machine-local configuration (written by `ma doctor --write`)
+config.local.json
+
+# Secrets
+.env
+*.env
+
+# Exports may contain captured content
+exports/
+*.export.json
+*.export.md
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp
