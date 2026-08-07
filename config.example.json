@@ -1,0 +1,19 @@
+{
+  "storage": {
+    "backend": "sqlite",
+    "sqlite_path": "data/memory.db",
+    "postgres_dsn": ""
+  },
+  "identity": {
+    "agent_key": "claude-code",
+    "default_project": ""
+  },
+  "recall": {
+    "token_budget": 2000,
+    "max_items": 25,
+    "recency_half_life_days": 30.0
+  },
+  "capture": {
+    "default_importance": 0.5
+  }
+}
