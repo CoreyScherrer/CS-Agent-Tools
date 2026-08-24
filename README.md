@@ -9,6 +9,7 @@ or both.
 |---|---|
 | **[Memory Archive](#memory-archive-framework)** (`ma/`) | Persistent memory across AI coding sessions |
 | **[Product Discovery](product-discovery/)** (`product-discovery/`) | Enterprise discovery → requirements → artifacts |
+| **[Agent Skills](skills/)** (`skills/`) | Working discipline for AI coding sessions |
 
 Both follow the same rule: **the framework is shareable, what it captures is not.**
 See [Data Boundary](docs/wiki/Data-Boundary.md).
@@ -238,3 +239,30 @@ than the protocol docs do.
 Project state — `evidence/`, `assumptions.md`, `artifacts/` — is **work product**
 and never goes in this repo. Same rule as the memory archive. Projects live outside
 the framework directory; `scripts/new-project.sh` scaffolds them elsewhere by design.
+
+---
+
+# Agent Skills
+
+Portable working discipline for AI coding sessions, in [`skills/`](skills/). Independent of
+both frameworks above — install either, both, or neither.
+
+| Skill | Use when |
+|---|---|
+| [`session-memory-discipline`](skills/session-memory-discipline/) | Deciding what to record from a session so the next one starts informed |
+| [`writing-durable-instructions`](skills/writing-durable-instructions/) | Adding or editing a standing rule an agent will follow across sessions |
+
+Both encode the same underlying problem: **agent sessions are amnesiac, and the things
+written down to fix that decay silently.** One covers what to record; the other covers how
+to write rules that stay true as systems change.
+
+## Install
+
+```bash
+cp -R skills/session-memory-discipline ~/.claude/skills/
+cp -R skills/writing-durable-instructions ~/.claude/skills/
+```
+
+Restart Claude Code or start a new session. Confirm with `ls ~/.claude/skills/`.
+
+For a single project rather than globally, use `<project>/.claude/skills/` instead.
