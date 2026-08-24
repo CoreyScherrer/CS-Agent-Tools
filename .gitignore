@@ -13,6 +13,19 @@ config.local.json
 .env
 *.env
 
+# Product-discovery project state is work product — mined evidence, the
+# assumption ledger, and generated artifacts.
+#
+# Projects are scaffolded OUTSIDE this repo by design, so these patterns are a
+# backstop for a project accidentally created inside it. They are anchored to the
+# repo root so they cannot swallow framework files that share a name:
+# product-discovery/protocol/assumptions.md is a protocol document, and
+# product-discovery/project-template/ holds the empty scaffold new-project.sh
+# copies. Both must ship.
+/evidence/
+/assumptions.md
+/artifacts/
+
 # Exports may contain captured content
 exports/
 *.export.json
