@@ -15,10 +15,21 @@ this is the rule that keeps the tool safe to use for employer work.
 | `data/`, `*.db` — the archive | | **never** |
 | `config.local.json` | | **never** |
 | Un-redacted `ma export` output | | **never** |
+| `product-discovery/` — the framework | yes | |
+| A project's `evidence/`, `assumptions.md`, `artifacts/` | | **never** |
 
 Captured memory is work product: decisions, org context, system architecture,
 ticket detail. It belongs to the employer, and it does not go to a personal
 account, a personal remote, or an external service.
+
+**The same rule governs the product discovery framework.** Its skills, protocol and
+scripts are shareable. What a project mines into `evidence/findings.md` — internal
+documents, ticket contents, interview notes, existing report logic — is work product
+and stays on the machine.
+
+This is why `scripts/new-project.sh` scaffolds projects *outside* the framework
+directory. A project is never a subdirectory of this repo, so there is no path by
+which mined evidence gets committed here by accident.
 
 ## How it is enforced
 
@@ -28,6 +39,11 @@ Convention is not enough — it gets forgotten under deadline. Three mechanisms:
 are ignored.
 
 **2. A pre-commit guard.** Installed by `ma init` into `.git/hooks/pre-commit`.
+It blocks `data/`, databases, local config, secrets, and — for product discovery —
+any `evidence/`, `assumptions.md`, or `artifacts/` path. The one exemption is
+`product-discovery/examples/worked-example/`, which is synthetic teaching material
+rather than mined content, exempted by exact path so it cannot become a smuggling
+route.
 It blocks the commit even when gitignore is bypassed with `git add -f` — which
 is the case gitignore alone misses. It lives on the machine holding the content,
 which is why it is installed rather than committed (git does not carry hooks
