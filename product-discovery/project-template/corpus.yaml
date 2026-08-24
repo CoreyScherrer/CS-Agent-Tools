@@ -1,0 +1,73 @@
+# Corpus manifest — what this project can mine.
+#
+# Declares evidence SOURCES by type, not by tool. A team with Confluence and one with
+# SharePoint write different `location` values and the same `type`. The mining skill
+# reads this and works with whatever is declared, degrading gracefully when a source
+# is unavailable.
+#
+# "Nothing connected yet, I paste files into a folder" is a first-class mode, not a
+# degraded one. Declare a `local_files` source pointing at the folder and mine it.
+
+project: ""          # short name for this engagement
+owner: ""            # who is accountable for this work
+updated: ""          # YYYY-MM-DD
+
+sources:
+
+  # Existing artifacts that do the job today. Highest-value source type: each one is a
+  # specification someone already wrote and that people actually use.
+  - id: S-001
+    type: existing_artifact
+    label: ""                    # e.g. "Weekly ops reports"
+    location: ""                 # path, URL, or "manual export to ./corpus/reports/"
+    access: manual | connector | export
+    format: ""                   # xlsx, sql, dashboard-def, pdf, deck
+    date_range: ""               # roughly what period this covers
+    est_volume: ""               # how many items
+    notes: ""
+
+  # Intake records — how people ask for things, in their own words.
+  - id: S-002
+    type: intake
+    label: ""                    # e.g. "Report request queue"
+    location: ""
+    access: manual | connector | export
+    format: ""
+    date_range: ""
+    est_volume: ""
+    notes: ""
+
+  # Written org knowledge — wikis, runbooks, data dictionaries, design docs.
+  - id: S-003
+    type: reference_doc
+    label: ""
+    location: ""
+    access: manual | connector | export
+    format: ""
+    date_range: ""
+    est_volume: ""
+    notes: ""
+
+  # Conversation history — threads, channels, email. High noise, uniquely captures
+  # friction and disagreement that never reaches a document.
+  - id: S-004
+    type: conversation
+    label: ""
+    location: ""
+    access: manual | connector | export
+    format: ""
+    date_range: ""
+    est_volume: ""
+    notes: ""
+
+# Sources deliberately NOT mined, and why. Recording exclusions matters: it distinguishes
+# "we looked and found nothing" from "we never looked", which changes how much the
+# evidence base can be trusted.
+excluded:
+  - source: ""
+    reason: ""                   # e.g. access denied, out of scope, superseded
+
+# Known coverage gaps in the corpus itself — what no available source covers.
+# Feeds directly into Corpus Quality and the DISCOVER agenda.
+known_gaps:
+  - ""
