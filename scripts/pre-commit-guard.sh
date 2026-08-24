@@ -15,11 +15,24 @@ STAGED=$(git diff --cached --name-only --diff-filter=ACM)
 
 BLOCKED=""
 while IFS= read -r file; do
+    # Framework files that share a name with project state. product-discovery/
+    # ships a protocol document called assumptions.md, an empty project scaffold,
+    # and a synthetic worked example — none of them are mined content. Exempted by
+    # exact prefix so the rule below still catches real project state anywhere.
+    case "$file" in
+        product-discovery/protocol/*)                continue ;;
+        product-discovery/project-template/*)        continue ;;
+        product-discovery/examples/worked-example/*) continue ;;
+    esac
     case "$file" in
         data/*|*/data/*)              BLOCKED+="  $file  (captured content)"$'\n' ;;
         *.db|*.sqlite|*.sqlite3)      BLOCKED+="  $file  (database)"$'\n' ;;
         config.local.json)            BLOCKED+="  $file  (local config)"$'\n' ;;
         *.env|.env)                   BLOCKED+="  $file  (secrets)"$'\n' ;;
+        evidence/*|*/evidence/*)      BLOCKED+="  $file  (mined evidence)"$'\n' ;;
+        assumptions.md|*/assumptions.md)
+                                      BLOCKED+="  $file  (project ledger)"$'\n' ;;
+        artifacts/*|*/artifacts/*)    BLOCKED+="  $file  (project artifact)"$'\n' ;;
     esac
 done <<< "$STAGED"
 

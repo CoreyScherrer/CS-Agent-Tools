@@ -1,6 +1,22 @@
-# Memory Archive Framework
+# Work Environment Frameworks
 
 _Instructions to pass to my work environment._
+
+Two independent, portable frameworks. Neither depends on the other; install either
+or both.
+
+| | What it does |
+|---|---|
+| **[Memory Archive](#memory-archive-framework)** (`ma/`) | Persistent memory across AI coding sessions |
+| **[Product Discovery](product-discovery/)** (`product-discovery/`) | Enterprise discovery → requirements → artifacts |
+| **[Agent Skills](skills/)** (`skills/`) | Working discipline for AI coding sessions |
+
+Both follow the same rule: **the framework is shareable, what it captures is not.**
+See [Data Boundary](docs/wiki/Data-Boundary.md).
+
+---
+
+# Memory Archive Framework
 
 Persistent memory for AI coding sessions. Captures decisions, learnings and
 context into a local database and injects the relevant parts back at the start of
@@ -156,3 +172,97 @@ multi-user deployment.
 `docs/wiki/` is the source of truth and is version-controlled with the code.
 `scripts/publish-wiki.sh` copies it to the GitHub wiki (which must be
 initialised once through the web UI first).
+
+---
+
+# Product Discovery Framework
+
+_Masterful Product Swashbuckling_ — enterprise product discovery, from raw
+organizational information to artifacts a team can build from.
+
+Lives in [`product-discovery/`](product-discovery/). Self-contained plain files —
+no install, no dependencies beyond Python 3 for the linters.
+
+## What makes it different
+
+Most PM template libraries help you fill in a document. The document then reads as
+authoritative whether or not anything in it is true.
+
+This one makes artifacts **evidence-bound by construction**: every material claim
+either cites a source or is registered as an assumption with a validation path.
+There is no third state where a number gets quietly invented and later quoted in a
+steering deck as fact.
+
+Four gates, at four layers, so no single failure is silent:
+
+| Gate | Layer | Catches |
+|---|---|---|
+| Evidence citation | Authoring | Confident fiction |
+| Assumption ledger | Cross-stage state | Silent guessing |
+| Adversarial critic | Pre-ship review | Reasoning gaps |
+| Structural lint | Scripts that exit nonzero | Placeholders, broken refs, decay |
+
+## The spine
+
+```
+0 TRIAGE → 1 FRAME → 2 MINE → 3 DISCOVER → 4 DEFINE → 5 SPECIFY → 6 VALIDATE → 7 COMMUNICATE
+```
+
+Every project runs all seven; triage sets how heavy each one is. **MINE comes before
+DISCOVER on purpose** — in an enterprise, most of what an interview would surface is
+already written down, and stakeholder patience is the binding constraint.
+
+25 core skills, 3 analytics-domain skills, 3 linters.
+
+## Quickstart
+
+```bash
+cd product-discovery
+scripts/new-project.sh my-initiative ~/projects/my-initiative
+```
+
+Then fill in `corpus.yaml`, run `frame-problem`, run `mine-corpus`, continue down
+the spine. Validate at any point:
+
+```bash
+python3 scripts/lint-artifact.py ~/projects/my-initiative    # artifacts
+python3 scripts/lint-evidence.py ~/projects/my-initiative    # findings + ledger
+python3 scripts/lint-skill.py .                              # the framework itself
+```
+
+**Read [`product-discovery/examples/worked-example/`](product-discovery/examples/worked-example/)
+first** — a complete FRAME + MINE pass that answers most format questions faster
+than the protocol docs do.
+
+## Data boundary
+
+Project state — `evidence/`, `assumptions.md`, `artifacts/` — is **work product**
+and never goes in this repo. Same rule as the memory archive. Projects live outside
+the framework directory; `scripts/new-project.sh` scaffolds them elsewhere by design.
+
+---
+
+# Agent Skills
+
+Portable working discipline for AI coding sessions, in [`skills/`](skills/). Independent of
+both frameworks above — install either, both, or neither.
+
+| Skill | Use when |
+|---|---|
+| [`session-memory-discipline`](skills/session-memory-discipline/) | Deciding what to record from a session so the next one starts informed |
+| [`writing-durable-instructions`](skills/writing-durable-instructions/) | Adding or editing a standing rule an agent will follow across sessions |
+
+Both encode the same underlying problem: **agent sessions are amnesiac, and the things
+written down to fix that decay silently.** One covers what to record; the other covers how
+to write rules that stay true as systems change.
+
+## Install
+
+```bash
+cp -R skills/session-memory-discipline ~/.claude/skills/
+cp -R skills/writing-durable-instructions ~/.claude/skills/
+```
+
+Restart Claude Code or start a new session. Confirm with `ls ~/.claude/skills/`.
+
+For a single project rather than globally, use `<project>/.claude/skills/` instead.
