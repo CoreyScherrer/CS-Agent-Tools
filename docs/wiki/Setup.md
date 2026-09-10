@@ -13,7 +13,7 @@ library, because package installation may be restricted on a managed machine.
 ## Quick path
 
 ```bash
-git clone https://github.com/CoreyScherrer/kroger.git memory-archive
+git clone https://github.com/CoreyScherrer/PORTABLE-WORK.git memory-archive
 cd memory-archive
 
 python3 -m ma doctor        # probe the machine — read this output

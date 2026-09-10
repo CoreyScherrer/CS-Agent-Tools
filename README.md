@@ -1,6 +1,6 @@
-# Work Environment Frameworks
+# Portable Work Frameworks
 
-_Instructions to pass to my work environment._
+_Machine-agnostic frameworks for AI-assisted work._
 
 Two independent, portable frameworks. Neither depends on the other; install either
 or both.
@@ -29,7 +29,7 @@ beyond Python 3.9+ from the standard library.
 ## Setup
 
 ```bash
-git clone https://github.com/CoreyScherrer/kroger.git memory-archive
+git clone https://github.com/CoreyScherrer/PORTABLE-WORK.git memory-archive
 cd memory-archive
 
 python3 -m ma doctor --write   # probe the machine, choose a backend
