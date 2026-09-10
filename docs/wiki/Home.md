@@ -1,4 +1,4 @@
-# Memory Archive — Work Environment
+# Memory Archive — Portable Work
 
 Persistent memory for AI coding sessions on the work machine. Captures decisions,
 learnings and context into a local database, and injects the relevant parts back
