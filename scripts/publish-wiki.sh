@@ -14,7 +14,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WIKI_SRC="$REPO_ROOT/docs/wiki"
-WIKI_REMOTE="${MA_WIKI_REMOTE:-https://github.com/CoreyScherrer/PORTABLE-WORK.wiki.git}"
+WIKI_REMOTE="${MA_WIKI_REMOTE:-https://github.com/CoreyScherrer/CS-Agent-Tools.wiki.git}"
 DRY_RUN=0
 
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=1

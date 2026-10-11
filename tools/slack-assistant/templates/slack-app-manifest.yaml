@@ -1,0 +1,40 @@
+# Slack app manifest for the Slack Assistant.
+# api.slack.com/apps -> Create New App -> From a manifest -> paste this.
+# After ANY change to scopes or events: Reinstall to Workspace and re-paste the token.
+display_information:
+  name: Assistant
+  description: Personal AI assistant and ops console
+features:
+  bot_user:
+    display_name: Assistant
+    always_online: true
+  app_home:
+    messages_tab_enabled: true          # without this, DMs fail: restricted_action_read_only_channel
+    messages_tab_read_only_enabled: false
+oauth_config:
+  scopes:
+    bot:
+      - chat:write
+      - app_mentions:read
+      - im:history
+      - channels:history
+      - channels:read                   # lets code look up channel IDs; otherwise copy them by hand
+      - reactions:read
+      - files:read
+      - files:write
+      - links:read
+      # - commands                      # only if you add slash commands
+settings:
+  event_subscriptions:
+    request_url: https://hooks.example.com/slack/events   # Events API; delete this block for Socket Mode
+    bot_events:
+      - app_mention
+      - message.im
+      - message.channels                # filter to ONE channel in code
+      - reaction_added
+  # interactivity:                      # only if you add buttons/modals
+  #   is_enabled: true
+  #   request_url: https://hooks.example.com/slack/interactions
+  org_deploy_enabled: false
+  socket_mode_enabled: false            # true = Socket Mode, no public URL needed
+  token_rotation_enabled: false

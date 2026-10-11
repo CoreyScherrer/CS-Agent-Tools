@@ -1,8 +1,22 @@
-# CLAUDE.md — Memory Archive Framework
+# CLAUDE.md — CS-Agent-Tools
 
 Guidance for Claude Code working in this repo. Read this first.
 
-## What this is
+## The repo in one paragraph
+
+Portable tools for AI-assisted work, each a guide plus templates that a stranger
+and their AI agent can follow. `README.md` lists them. Every guide follows
+`docs/GUIDE-STANDARD.md`; new guides are made with `skills/build-a-tool/SKILL.md`
+(or the `agents/build-a-tool.md` subagent). Nothing here may be specific to one
+person's machines: run `scripts/check-neutral.sh` before committing anything under
+`docs/wiki/`, `tools/`, `skills/` or `agents/`. The wiki is `docs/wiki/`, flat, and
+`scripts/publish-wiki.sh` replaces the whole GitHub wiki with it — run it from
+`main` after merge, never from a branch.
+
+The rest of this file is about the Memory Archive (`ma/`), the one tool here that
+is code rather than a guide.
+
+## What the Memory Archive is
 
 A portable memory archive: it captures decisions, learnings and context from AI
 coding sessions into a local database, and injects the relevant parts back at the
