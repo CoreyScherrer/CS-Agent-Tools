@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- /Library/LaunchDaemons/com.example.slack-assistant.plist
+     sudo launchctl bootstrap system /Library/LaunchDaemons/com.example.slack-assistant.plist
+     Restart: sudo launchctl kickstart -k system/com.example.slack-assistant
+     NEVER chain bootout && bootstrap in one command (launchd race -> I/O error 5).
+     Keep WorkingDirectory OUTSIDE ~/Documents, ~/Desktop, ~/Downloads (macOS TCC). -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.example.slack-assistant</string>
+  <key>UserName</key><string>svc-assistant</string>
+  <key>WorkingDirectory</key><string>/opt/slack-assistant</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/slack-assistant/venv/bin/gunicorn</string>
+    <string>--bind</string><string>127.0.0.1:5017</string>
+    <string>--workers</string><string>1</string>
+    <string>--timeout</string><string>60</string>
+    <string>assistant.wsgi:app</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict><key>ENV_FILE</key><string>/etc/slack-assistant/assistant.env</string></dict>
+  <key>KeepAlive</key><true/>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>/var/log/slack-assistant/stdout.log</string>
+  <key>StandardErrorPath</key><string>/var/log/slack-assistant/stderr.log</string>
+</dict>
+</plist>
