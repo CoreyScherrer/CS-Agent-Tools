@@ -275,3 +275,7 @@ cp -R skills/writing-durable-instructions ~/.claude/skills/
 Restart Claude Code or start a new session. Confirm with `ls ~/.claude/skills/`.
 
 For a single project rather than globally, use `<project>/.claude/skills/` instead.
+
+## License
+
+Code and templates: MIT. Guides and documentation: CC BY 4.0. See [LICENSE](LICENSE).
