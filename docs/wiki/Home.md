@@ -1,45 +1,49 @@
-# Memory Archive — Portable Work
+# CS-Agent-Tools
 
-Persistent memory for AI coding sessions on the work machine. Captures decisions,
-learnings and context into a local database, and injects the relevant parts back
-at the start of the next session.
+_Portable tools for AI-assisted work. Each is a guide you and your AI agent follow
+together. Nothing here is specific to one person's machines, accounts or paths._
 
-**Start here:** [[Setup]] → [[Daily-Use]] → [[Data-Boundary]]
+> Why, hello there! You've wandered into a small library of journeys through the
+> wonderful world of Artificial Intelligence and its many marvellous
+> capabilities. Each page below is one expedition: pick it, hand it to your
+> trusty AI agent, and together you'll arrive somewhere delightful. The future is
+> bright, the instructions are clear, and the gotchas have already been met so you
+> needn't meet them yourself.
 
-## Why this exists
+## The tools
 
-Every Claude Code session starts from zero. In a new role that is expensive:
-org knowledge, system ownership, the reason a decision went the way it did, the
-constraint that cost you an afternoon — none of it survives to the next session,
-and most of it was never in a repo to begin with.
+| Tool | What you end up with | Human time | AI time |
+|---|---|---|---|
+| [[Memory-Archive]] | Persistent memory across AI coding sessions, no network calls | 20 min | 30 min |
+| [[Mac-Mini-Web-Server]] | A home server on a Mac mini, safely reachable from the internet, with a private network for admin | 3–5 h | 6–10 h |
+| [[Slack-Assistant]] | A personal AI assistant and ops console in your Slack workspace | 1–2 h | 2–4 h |
+| [[Product-Discovery]] | An evidence-first product discovery framework with 25 skills | 10 min | — |
+| [[Build-A-Tool]] | The agent that writes the next guide to the same standard | 5 min | per tool |
 
-This captures that knowledge deliberately and feeds it back automatically.
+Times are honest estimates for a first run with an AI coding agent doing the
+file and shell work; see each page's §Setup time for what drives them.
 
-## The one rule
+## How to use a guide
 
-**The framework is shareable. What it captures is not.**
+1. Read §What this is and §What you need. Decide §Free vs paid.
+2. Open your AI coding agent **on the machine being set up** (or over SSH into
+   it) and give it the page. Give it a browser too — dashboards are half the work.
+3. Work the phases in order. You do the human steps (sign-ups, approvals,
+   cables); the agent does the rest. Each phase ends with a check you can run.
+4. When a step produces a secret, paste it where the agent says — never into chat.
 
-Captured content is work product. It stays on the machine that captured it —
-never committed, never pushed, never pasted into an external service. This is
-enforced by a pre-commit guard, not left to memory. See [[Data-Boundary]].
+## The rules every page follows
 
-## Pages
+- **[[Guide-Standard]]** — ten sections, decisions with defaults, real gotchas only.
+- **[[Data-Boundary]]** — the framework is shareable; what it captures is not.
+- No real hostnames, IPs, handles or home paths anywhere (`scripts/check-neutral.sh`).
+
+## Other pages
 
 | Page | What it covers |
 |---|---|
-| [[Setup]] | Standing it up on a new or restricted machine |
-| [[Daily-Use]] | Capture and recall commands, what is worth capturing |
-| [[Data-Boundary]] | What may leave the machine, and what may not |
-| [[Architecture]] | How it is built and why |
-| [[Troubleshooting]] | Symptoms, causes, fixes |
-| [[Roadmap]] | What Phase 2 depends on |
-
-## Current state
-
-Phase 1: capture, retrieval, and session injection. Working and tested.
-
-Deliberately absent — each additive later rather than a refactor: semantic
-search, LLM summarization, knowledge-graph edges, MCP server, background sync
-daemon, web UI, shared multi-user backend.
-
-Nothing in this framework makes an outbound network call.
+| [[Setup]] | Standing the Memory Archive up on a new or restricted machine |
+| [[Daily-Use]] | Memory Archive capture and recall |
+| [[Architecture]] | How the Memory Archive is built and why |
+| [[Troubleshooting]] | Memory Archive symptoms, causes, fixes |
+| [[Roadmap]] | What the Memory Archive's Phase 2 depends on |

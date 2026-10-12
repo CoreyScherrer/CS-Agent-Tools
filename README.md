@@ -1,18 +1,27 @@
-# Portable Work Frameworks
+# CS-Agent-Tools
 
-_Machine-agnostic frameworks for AI-assisted work._
+_Portable tools for AI-assisted work. Each one is a guide a person and their AI
+agent follow together, plus the code or templates it needs. Nothing here is
+specific to one person's machines._
 
-Two independent, portable frameworks. Neither depends on the other; install either
-or both.
+| Tool | What you end up with | Guide |
+|---|---|---|
+| **Memory Archive** (`ma/`) | Persistent memory across AI coding sessions | [Memory-Archive](docs/wiki/Memory-Archive.md) |
+| **Mac Mini Web Server** (`tools/mac-mini-web-server/`) | A home server on a Mac mini, reachable safely from the internet | [Mac-Mini-Web-Server](docs/wiki/Mac-Mini-Web-Server.md) |
+| **Slack Assistant** (`tools/slack-assistant/`) | A personal AI assistant and ops console in your Slack | [Slack-Assistant](docs/wiki/Slack-Assistant.md) |
+| **Product Discovery** (`product-discovery/`) | Enterprise discovery → requirements → artifacts | [Product-Discovery](docs/wiki/Product-Discovery.md) |
+| **Build a Tool** (`agents/`, `skills/build-a-tool/`) | The agent that writes the next guide to the same standard | [Build-A-Tool](docs/wiki/Build-A-Tool.md) |
+| **Agent Skills** (`skills/`) | Working discipline for AI coding sessions | [skills/](skills/) |
 
-| | What it does |
-|---|---|
-| **[Memory Archive](#memory-archive-framework)** (`ma/`) | Persistent memory across AI coding sessions |
-| **[Product Discovery](product-discovery/)** (`product-discovery/`) | Enterprise discovery → requirements → artifacts |
-| **[Agent Skills](skills/)** (`skills/`) | Working discipline for AI coding sessions |
+Every guide follows [docs/GUIDE-STANDARD.md](docs/GUIDE-STANDARD.md): what the tool
+is, what it needs, how long it takes (human **and** AI), decisions with defaults,
+free-vs-paid for every account, and a ledger of gotchas that really happened.
 
-Both follow the same rule: **the framework is shareable, what it captures is not.**
-See [Data Boundary](docs/wiki/Data-Boundary.md).
+**Start:** open the wiki [Home](docs/wiki/Home.md), pick a tool, hand the page to
+your AI agent.
+
+Every tool follows the same rule: **the framework is shareable, what it captures
+is not.** See [Data Boundary](docs/wiki/Data-Boundary.md).
 
 ---
 
@@ -29,7 +38,7 @@ beyond Python 3.9+ from the standard library.
 ## Setup
 
 ```bash
-git clone https://github.com/CoreyScherrer/PORTABLE-WORK.git memory-archive
+git clone https://github.com/CoreyScherrer/CS-Agent-Tools.git memory-archive
 cd memory-archive
 
 python3 -m ma doctor --write   # probe the machine, choose a backend
@@ -266,3 +275,7 @@ cp -R skills/writing-durable-instructions ~/.claude/skills/
 Restart Claude Code or start a new session. Confirm with `ls ~/.claude/skills/`.
 
 For a single project rather than globally, use `<project>/.claude/skills/` instead.
+
+## License
+
+Code and templates: MIT. Guides and documentation: CC BY 4.0. See [LICENSE](LICENSE).
