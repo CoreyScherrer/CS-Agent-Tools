@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- /Library/LaunchDaemons/com.example.<svc>.plist  (one per service)
+     Load:    sudo launchctl bootstrap system /Library/LaunchDaemons/com.example.<svc>.plist
+     Restart: sudo launchctl kickstart -k system/com.example.<svc>
+     NEVER chain `bootout && bootstrap` in one command (launchd race -> I/O error 5, service gone).
+     `launchctl print` may show runs=0 after a real run; trust the log mtime and owner instead.
+     WorkingDirectory must be under /var/www or /opt, never ~/Documents, ~/Desktop, ~/Downloads (TCC).
+     If this job needs the login keychain (e.g. a coding-agent CLI), it must be a gui LaunchAgent instead.
+     plistlib-based tools strip XML comments: keep these notes in the repo too. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.example.svc</string>
+  <key>UserName</key><string>svc-example</string>
+  <key>GroupName</key><string>svc-example</string>
+  <key>WorkingDirectory</key><string>/var/www/example</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/var/www/example/venv/bin/gunicorn</string>
+    <string>--bind</string><string>127.0.0.1:5001</string>
+    <string>--workers</string><string>2</string>
+    <string>app:app</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- Every process reads THIS file and no other; a missing env file is often ignored silently. -->
+    <key>ENV_FILE</key><string>/var/acme/secrets/example.env</string>
+    <key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+  </dict>
+  <key>KeepAlive</key><true/>
+  <key>RunAtLoad</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <!-- Logs OUTSIDE /var/log: a macOS update deleted /var/log/nginx once. Dir owned by the service user. -->
+  <key>StandardOutPath</key><string>/var/acme/logs/example/stdout.log</string>
+  <key>StandardErrorPath</key><string>/var/acme/logs/example/stderr.log</string>
+</dict>
+</plist>

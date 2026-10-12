@@ -16,6 +16,8 @@ this is the rule that keeps the tool safe to use for employer work.
 | `config.local.json` | | **never** |
 | Un-redacted `ma export` output | | **never** |
 | `product-discovery/` — the framework | yes | |
+| `tools/`, `docs/wiki/`, `skills/`, `agents/` — guides and templates | yes, and must pass `scripts/check-neutral.sh` | |
+| A filled-in template (`*.env`, a plist with your paths, a tunnel token) | | **never** |
 | A project's `evidence/`, `assumptions.md`, `artifacts/` | | **never** |
 
 Captured memory is work product: decisions, org context, system architecture,
