@@ -42,10 +42,11 @@ are ignored.
 
 **2. A pre-commit guard.** Installed by `ma init` into `.git/hooks/pre-commit`.
 It blocks `data/`, databases, local config, secrets, and — for product discovery —
-any `evidence/`, `assumptions.md`, or `artifacts/` path. The one exemption is
-`product-discovery/examples/worked-example/`, which is synthetic teaching material
-rather than mined content, exempted by exact path so it cannot become a smuggling
-route.
+any `evidence/`, `assumptions.md`, or `artifacts/` path. The three exempt prefixes
+are `product-discovery/protocol/`, `product-discovery/project-template/`, and
+`product-discovery/examples/worked-example/`: framework protocol, an empty project
+scaffold, and synthetic teaching material. They are exempted by exact prefix so
+they cannot become a smuggling route.
 It blocks the commit even when gitignore is bypassed with `git add -f` — which
 is the case gitignore alone misses. It lives on the machine holding the content,
 which is why it is installed rather than committed (git does not carry hooks
@@ -104,9 +105,14 @@ like — without exposing what is in it:
 python3 -m ma export --redact
 ```
 
-Metadata and structure survive; every piece of free text becomes `[redacted]`.
-A redacted export cannot be imported, by design: it no longer contains the
-content it describes.
+The export keeps its section structure and `exported_at`. Memories keep only
+`id`, `type`, `importance`, `pinned`, `created_at`, `updated_at`, and `expires_at`;
+people, systems, and work items keep only `id`, `owner_id`, `status`, `created_at`,
+and `updated_at`. Links remain unchanged (`memory_id`, `entity_type`, `entity_id`,
+and `created_at`), and the top level includes `redacted: true`. Every other field
+whose value is not `None`, `""`, or `"[]"` becomes the literal `[redacted]`;
+those empty values remain unchanged. A redacted export cannot be imported, by
+design: it no longer contains the content it describes.
 
 ## "But the repo is private"
 
