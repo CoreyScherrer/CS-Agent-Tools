@@ -10,8 +10,7 @@
 
 set -uo pipefail
 
-STAGED=$(git diff --cached --name-only --diff-filter=ACM)
-[[ -z "$STAGED" ]] && exit 0
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
 
 BLOCKED=""
 while IFS= read -r file; do
@@ -52,6 +51,11 @@ and rename it. To override deliberately (rare, think first):
 
 EOF
     exit 1
+fi
+
+LOCAL_HOOK="$(git rev-parse --git-dir)/hooks/pre-commit.local"
+if [[ -x "$LOCAL_HOOK" ]]; then
+    exec "$LOCAL_HOOK" "$@"
 fi
 
 exit 0

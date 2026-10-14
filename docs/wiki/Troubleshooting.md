@@ -8,6 +8,7 @@
 | No `[Memory Archive]` banner | hooks not firing | see below |
 | `recall` returns nothing | empty archive, or project filter | `ma status`; retry without `--project` |
 | Commit blocked | guard caught content | correct behaviour — see [[Data-Boundary]] |
+| `ma init` kept an existing hook as `pre-commit.local` | a foreign hook was present | it runs after the guard; see below |
 | `psycopg` ImportError | Postgres selected, no driver | set `storage.backend` to `sqlite` |
 | Hook does nothing, silently | `python3` not on the hook's PATH | set `MA_PYTHON` in your shell profile |
 | `ma init` says "not a git repo" | ran outside the clone | `cd` into the repo |
@@ -83,6 +84,11 @@ Working as designed. See [[Data-Boundary]].
 - Framework code that landed in `data/` → move it out and commit from there
 
 Do not use `--no-verify` to commit content.
+
+If `ma init` says the existing hook was kept as
+`.git/hooks/pre-commit.local`, the guard runs it after its own checks. If `ma init`
+warns that both a foreign `pre-commit` hook and `pre-commit.local` exist, it leaves
+both untouched; resolve which hook to keep before running `ma init` again.
 
 ## Postgres problems
 

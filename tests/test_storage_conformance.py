@@ -33,6 +33,11 @@ class BackendConformanceMixin:
         self.assertEqual(stored["type"], "decision")
         self.assertEqual(stored["source"], "manual")
 
+    def test_add_memory_preserves_created_at(self):
+        created_at = "2025-01-01T00:00:00+00:00"
+        mid = self.backend.add_memory(type="decision", title="old", created_at=created_at)
+        self.assertEqual(self.backend.get_memory(mid)["created_at"], created_at)
+
     def test_tags_round_trip_as_json_text(self):
         mid = self.backend.add_memory(type="learning", title="t", tags=["a", "b"])
         self.assertEqual(self.backend.get_memory(mid)["tags"], '["a", "b"]')
@@ -73,6 +78,20 @@ class BackendConformanceMixin:
         mid = self.backend.add_memory(type="learning", title="t")
         pid = self.backend.add_entity("person", name="Sam")
         self.backend.add_link(mid, "person", pid)
+        self.backend.add_link(mid, "person", pid)
+        self.assertEqual(len(self.backend.links_for_memory(mid)), 1)
+
+    def test_failed_insert_does_not_leave_connection_aborted(self):
+        self.backend.add_memory(id="duplicate-id", type="learning", title="first")
+        try:
+            self.backend.add_memory(id="duplicate-id", type="learning", title="duplicate")
+        except Exception as exc:
+            self.assertIn(type(exc).__name__, ("IntegrityError", "UniqueViolation"))
+        else:
+            self.fail("duplicate memory id did not raise an integrity error")
+
+        mid = self.backend.add_memory(type="learning", title="after duplicate")
+        pid = self.backend.add_entity("person", name="Sam")
         self.backend.add_link(mid, "person", pid)
         self.assertEqual(len(self.backend.links_for_memory(mid)), 1)
 
