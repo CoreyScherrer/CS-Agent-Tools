@@ -81,6 +81,16 @@ class BackendConformanceMixin:
         self.backend.add_link(mid, "person", pid)
         self.assertEqual(len(self.backend.links_for_memory(mid)), 1)
 
+    def test_failed_insert_does_not_leave_connection_aborted(self):
+        self.backend.add_memory(id="duplicate-id", type="learning", title="first")
+        with self.assertRaises(Exception):
+            self.backend.add_memory(id="duplicate-id", type="learning", title="duplicate")
+
+        mid = self.backend.add_memory(type="learning", title="after duplicate")
+        pid = self.backend.add_entity("person", name="Sam")
+        self.backend.add_link(mid, "person", pid)
+        self.assertEqual(len(self.backend.links_for_memory(mid)), 1)
+
     def test_find_entity_matches_partial_name(self):
         self.backend.add_entity("person", name="Alexandra Chen")
         self.assertEqual(len(self.backend.find_entity("person", "alex")), 1)
