@@ -195,8 +195,8 @@ class TestExport(RepoCase):
 class TestImport(RepoCase):
     """Export/import is how content moves between machines — it must round-trip."""
 
-    def _second_repo(self):
-        backend = SQLiteBackend(os.path.join(self._tmp.name, "second.db"))
+    def _second_repo(self, filename="second.db"):
+        backend = SQLiteBackend(os.path.join(self._tmp.name, filename))
         backend.init_schema()
         self.addCleanup(backend.close)
         return Repository(backend, CFG)
@@ -257,6 +257,28 @@ class TestImport(RepoCase):
         )
         for source, imported in zip(source_rows, target_rows):
             self.assertEqual(normalize(imported), normalize(source))
+
+    def test_entity_json_fields_survive_two_round_trips(self):
+        person_id = self.backend.add_entity("person", name="Jane Doe", aliases=["JD"])
+        system_id = self.backend.add_entity(
+            "system", name="checkout", links=["database", "cache"]
+        )
+        memory_id = self.backend.add_memory(type="decision", title="checkout", tags=["release"])
+        self.backend.add_link(memory_id, "person", person_id)
+        self.backend.add_link(memory_id, "system", system_id)
+
+        first = self._second_repo()
+        first.import_data(self.repo.export())
+        second = self._second_repo("third.db")
+        second.import_data(first.export())
+
+        for target in (first, second):
+            person = next(row for row in target.backend.list_entities("person") if row["id"] == person_id)
+            system = next(row for row in target.backend.list_entities("system") if row["id"] == system_id)
+            memory = target.backend.get_memory(memory_id)
+            self.assertEqual(json.loads(person["aliases"]), ["JD"])
+            self.assertEqual(json.loads(system["links"]), ["database", "cache"])
+            self.assertEqual(json.loads(memory["tags"]), ["release"])
 
     def test_import_is_idempotent(self):
         self.repo.capture("decision", "once", links=[("person", "Jane")])
