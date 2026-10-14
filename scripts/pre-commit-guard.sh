@@ -54,4 +54,9 @@ EOF
     exit 1
 fi
 
+LOCAL_HOOK="$(git rev-parse --git-dir)/hooks/pre-commit.local"
+if [[ -x "$LOCAL_HOOK" ]]; then
+    exec "$LOCAL_HOOK" "$@"
+fi
+
 exit 0
