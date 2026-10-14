@@ -10,7 +10,7 @@
 
 set -uo pipefail
 
-STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
 [[ -z "$STAGED" ]] && exit 0
 
 BLOCKED=""
