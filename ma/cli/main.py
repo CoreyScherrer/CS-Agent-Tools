@@ -100,13 +100,31 @@ def _install_precommit_guard():
     hooks_dir = os.path.join(git_dir, "hooks")
     os.makedirs(hooks_dir, exist_ok=True)
     target = os.path.join(hooks_dir, "pre-commit")
+    local_target = os.path.join(hooks_dir, "pre-commit.local")
     source = os.path.join(config_mod.REPO_ROOT, "scripts", "pre-commit-guard.sh")
     try:
         with open(source, "r", encoding="utf-8") as fh:
             body = fh.read()
+        kept_existing = False
+        if os.path.exists(target):
+            with open(target, "r", encoding="utf-8") as fh:
+                existing = fh.read()
+            if "Pre-commit guard — blocks captured content" not in existing:
+                if os.path.exists(local_target):
+                    return (
+                        "WARNING: foreign .git/hooks/pre-commit and "
+                        ".git/hooks/pre-commit.local both exist; left both unchanged"
+                    )
+                os.rename(target, local_target)
+                kept_existing = True
         with open(target, "w", encoding="utf-8") as fh:
             fh.write(body)
         os.chmod(target, 0o755)
+        if kept_existing:
+            return (
+                "Installed pre-commit guard; your existing hook was kept as "
+                ".git/hooks/pre-commit.local and still runs"
+            )
         return "Installed pre-commit guard (blocks committing data/ and *.db)"
     except OSError as exc:
         return "WARNING: could not install pre-commit guard: {}".format(exc)
@@ -302,7 +320,9 @@ def cmd_migrate(args):
 
     for memory in source.list_memories(limit=1000000, include_expired=True):
         for link in source.links_for_memory(memory["id"]):
-            target.add_link(link["memory_id"], link["entity_type"], link["entity_id"])
+            target.add_link(
+                link["memory_id"], link["entity_type"], link["entity_id"], link.get("created_at")
+            )
 
     print("migrated {} memories to PostgreSQL".format(moved))
     print("SQLite source left intact at {}".format(source.path))

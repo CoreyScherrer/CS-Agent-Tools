@@ -1,5 +1,6 @@
 """Repository behaviour: validation, link resolution, recall assembly, export."""
 
+import json
 import os
 import tempfile
 import unittest
@@ -134,22 +135,68 @@ class TestExport(RepoCase):
         self.assertIn("exported_at", data)
 
     def test_redacted_export_keeps_structure_and_drops_content(self):
-        self.repo.capture("decision", "Confidential title", "secret body",
-                          links=[("person", "Jane Doe")])
+        memory_id = self.repo.capture(
+            "decision",
+            "memory-title-sentinel",
+            "memory-body-sentinel",
+            project="/Users/jane/clients/acme-bank",
+            tags=["memory-tags-sentinel"],
+            source="memory-source-sentinel",
+            agent_key="memory-agent-sentinel",
+            session_id="memory-session-sentinel",
+        )
+        person_id = self.backend.add_entity(
+            "person",
+            name="person-name-sentinel",
+            role="person-role-sentinel",
+            team="person-team-sentinel",
+            aliases=["person-alias-sentinel"],
+            notes="person-notes-sentinel",
+        )
+        system_id = self.backend.add_entity(
+            "system",
+            name="system-name-sentinel",
+            purpose="system-purpose-sentinel",
+            notes="system-notes-sentinel",
+            links=["system-links-sentinel"],
+        )
+        self.backend.add_link(memory_id, "person", person_id)
+        self.backend.add_link(memory_id, "system", system_id)
+
         data = self.repo.export(redact=True)
-        blob = str(data)
-        self.assertNotIn("Confidential title", blob)
-        self.assertNotIn("secret body", blob)
-        self.assertNotIn("Jane Doe", blob)
+        blob = json.dumps(data)
+        for sentinel in (
+            "memory-title-sentinel",
+            "memory-body-sentinel",
+            "/Users/jane/clients/acme-bank",
+            "memory-tags-sentinel",
+            "memory-source-sentinel",
+            "memory-agent-sentinel",
+            "memory-session-sentinel",
+            "person-name-sentinel",
+            "person-role-sentinel",
+            "person-team-sentinel",
+            "person-alias-sentinel",
+            "person-notes-sentinel",
+            "system-name-sentinel",
+            "system-purpose-sentinel",
+            "system-notes-sentinel",
+            "system-links-sentinel",
+        ):
+            self.assertNotIn(sentinel, blob)
         self.assertEqual(len(data["memories"]), 1)
+        self.assertEqual(data["memories"][0]["id"], memory_id)
+        self.assertEqual(data["memories"][0]["type"], "decision")
+        self.assertEqual(data["people"][0]["id"], person_id)
+        self.assertEqual(data["systems"][0]["id"], system_id)
         self.assertTrue(data["redacted"])
 
 
 class TestImport(RepoCase):
     """Export/import is how content moves between machines — it must round-trip."""
 
-    def _second_repo(self):
-        backend = SQLiteBackend(os.path.join(self._tmp.name, "second.db"))
+    def _second_repo(self, filename="second.db"):
+        backend = SQLiteBackend(os.path.join(self._tmp.name, filename))
         backend.init_schema()
         self.addCleanup(backend.close)
         return Repository(backend, CFG)
@@ -167,6 +214,71 @@ class TestImport(RepoCase):
         self.assertEqual(len(target.backend.list_memories()), 2)
         found = target.entity_context("system", "checkout")
         self.assertEqual(len(found["memories"]), 1)
+
+    def test_round_trip_preserves_timestamps(self):
+        created_at = "2025-01-01T00:00:00+00:00"
+        updated_at = "2025-01-02T00:00:00+00:00"
+        link_created_at = "2025-01-03T00:00:00+00:00"
+        memory_id = self.backend.add_memory(
+            type="decision",
+            title="old memory",
+            tags=["legacy"],
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+        system_id = self.backend.add_entity(
+            "system",
+            name="legacy system",
+            links=["service-id"],
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+        self.backend.add_link(memory_id, "system", system_id, created_at=link_created_at)
+
+        target = self._second_repo()
+        target.import_data(self.repo.export())
+
+        def normalize(row):
+            result = dict(row)
+            for field in ("tags", "aliases", "links"):
+                if field in result and isinstance(result[field], str):
+                    result[field] = json.loads(result[field])
+            return result
+
+        source_rows = (
+            self.backend.get_memory(memory_id),
+            self.backend.list_entities("system")[0],
+            self.backend.links_for_memory(memory_id)[0],
+        )
+        target_rows = (
+            target.backend.get_memory(memory_id),
+            target.backend.list_entities("system")[0],
+            target.backend.links_for_memory(memory_id)[0],
+        )
+        for index in range(len(source_rows)):
+            self.assertEqual(normalize(target_rows[index]), normalize(source_rows[index]))
+
+    def test_entity_json_fields_survive_two_round_trips(self):
+        person_id = self.backend.add_entity("person", name="Jane Doe", aliases=["JD"])
+        system_id = self.backend.add_entity(
+            "system", name="checkout", links=["database", "cache"]
+        )
+        memory_id = self.backend.add_memory(type="decision", title="checkout", tags=["release"])
+        self.backend.add_link(memory_id, "person", person_id)
+        self.backend.add_link(memory_id, "system", system_id)
+
+        first = self._second_repo()
+        first.import_data(self.repo.export())
+        second = self._second_repo("third.db")
+        second.import_data(first.export())
+
+        for target in (first, second):
+            person = next(row for row in target.backend.list_entities("person") if row["id"] == person_id)
+            system = next(row for row in target.backend.list_entities("system") if row["id"] == system_id)
+            memory = target.backend.get_memory(memory_id)
+            self.assertEqual(json.loads(person["aliases"]), ["JD"])
+            self.assertEqual(json.loads(system["links"]), ["database", "cache"])
+            self.assertEqual(json.loads(memory["tags"]), ["release"])
 
     def test_import_is_idempotent(self):
         self.repo.capture("decision", "once", links=[("person", "Jane")])
