@@ -215,6 +215,49 @@ class TestImport(RepoCase):
         found = target.entity_context("system", "checkout")
         self.assertEqual(len(found["memories"]), 1)
 
+    def test_round_trip_preserves_timestamps(self):
+        created_at = "2025-01-01T00:00:00+00:00"
+        updated_at = "2025-01-02T00:00:00+00:00"
+        link_created_at = "2025-01-03T00:00:00+00:00"
+        memory_id = self.backend.add_memory(
+            type="decision",
+            title="old memory",
+            tags=["legacy"],
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+        system_id = self.backend.add_entity(
+            "system",
+            name="legacy system",
+            links=["service-id"],
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+        self.backend.add_link(memory_id, "system", system_id, created_at=link_created_at)
+
+        target = self._second_repo()
+        target.import_data(self.repo.export())
+
+        def normalize(row):
+            result = dict(row)
+            for field in ("tags", "aliases", "links"):
+                if field in result and isinstance(result[field], str):
+                    result[field] = json.loads(result[field])
+            return result
+
+        source_rows = (
+            self.backend.get_memory(memory_id),
+            self.backend.list_entities("system")[0],
+            self.backend.links_for_memory(memory_id)[0],
+        )
+        target_rows = (
+            target.backend.get_memory(memory_id),
+            target.backend.list_entities("system")[0],
+            target.backend.links_for_memory(memory_id)[0],
+        )
+        for source, imported in zip(source_rows, target_rows):
+            self.assertEqual(normalize(imported), normalize(source))
+
     def test_import_is_idempotent(self):
         self.repo.capture("decision", "once", links=[("person", "Jane")])
         payload = self.repo.export()
