@@ -131,7 +131,17 @@ class TestInstallPrecommitGuard(GitRepoCase):
         self.assertEqual(self._git("add", "--", "safe.txt").returncode, 0)
         commit = self._commit("add safe file")
         self.assertEqual(commit.returncode, 0, commit.stdout + commit.stderr)
-        self.assertTrue((self.repo / "hook-ran").is_file())
+        marker = self.repo / "hook-ran"
+        self.assertTrue(marker.is_file())
+
+        marker.unlink()
+        empty_commit = self._git(
+            "-c", "user.name=Test User",
+            "-c", "user.email=test@example.com",
+            "commit", "--allow-empty", "-m", "empty commit",
+        )
+        self.assertEqual(empty_commit.returncode, 0, empty_commit.stdout + empty_commit.stderr)
+        self.assertTrue(marker.is_file())
 
     def test_reinstall_refreshes_guard_without_creating_local_hook(self):
         first = main_mod._install_precommit_guard()
