@@ -66,9 +66,18 @@ class SQLBackend(StorageBackend):
         return sql if self.paramstyle == "qmark" else sql.replace("?", "%s")
 
     def execute(self, sql, params=()):
-        cur = self.connect().cursor()
-        cur.execute(self._q(sql), params)
-        return cur
+        try:
+            cur = self.connect().cursor()
+            cur.execute(self._q(sql), params)
+            return cur
+        except Exception:
+            conn = getattr(self, "conn", None)
+            if conn is not None:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            raise
 
     def query(self, sql, params=()):
         """Run a SELECT and return rows as plain dicts.
@@ -215,7 +224,8 @@ class SQLBackend(StorageBackend):
     def add_link(self, memory_id, entity_type, entity_id, created_at=None):
         try:
             self.execute(
-                "INSERT INTO links (memory_id, entity_type, entity_id, created_at) VALUES (?,?,?,?)",
+                """INSERT INTO links (memory_id, entity_type, entity_id, created_at)
+                   VALUES (?,?,?,?) ON CONFLICT DO NOTHING""",
                 (memory_id, entity_type, entity_id, created_at or now_iso()),
             )
             self.commit()
