@@ -71,7 +71,7 @@ class SQLBackend(StorageBackend):
             cur.execute(self._q(sql), params)
             return cur
         except Exception:
-            conn = getattr(self, "conn", None)
+            conn = getattr(self, "_conn", None)
             if conn is not None:
                 try:
                     conn.rollback()
@@ -87,7 +87,10 @@ class SQLBackend(StorageBackend):
         """
         cur = self.execute(sql, params)
         cols = [d[0] for d in cur.description]
-        rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+        rows = [
+            {cols[index]: value for index, value in enumerate(row)}
+            for row in cur.fetchall()
+        ]
         cur.close()
         return rows
 
