@@ -83,8 +83,12 @@ class BackendConformanceMixin:
 
     def test_failed_insert_does_not_leave_connection_aborted(self):
         self.backend.add_memory(id="duplicate-id", type="learning", title="first")
-        with self.assertRaises(Exception):
+        try:
             self.backend.add_memory(id="duplicate-id", type="learning", title="duplicate")
+        except Exception as exc:
+            self.assertIn(type(exc).__name__, ("IntegrityError", "UniqueViolation"))
+        else:
+            self.fail("duplicate memory id did not raise an integrity error")
 
         mid = self.backend.add_memory(type="learning", title="after duplicate")
         pid = self.backend.add_entity("person", name="Sam")

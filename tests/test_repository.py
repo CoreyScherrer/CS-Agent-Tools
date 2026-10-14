@@ -255,8 +255,8 @@ class TestImport(RepoCase):
             target.backend.list_entities("system")[0],
             target.backend.links_for_memory(memory_id)[0],
         )
-        for source, imported in zip(source_rows, target_rows):
-            self.assertEqual(normalize(imported), normalize(source))
+        for index in range(len(source_rows)):
+            self.assertEqual(normalize(target_rows[index]), normalize(source_rows[index]))
 
     def test_entity_json_fields_survive_two_round_trips(self):
         person_id = self.backend.add_entity("person", name="Jane Doe", aliases=["JD"])
