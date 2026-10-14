@@ -23,6 +23,18 @@ def new_id():
     return str(uuid.uuid4())
 
 
+def _json_list(value):
+    if isinstance(value, (list, tuple)):
+        return json.dumps(list(value))
+    if isinstance(value, str):
+        try:
+            decoded = json.loads(value)
+        except (TypeError, ValueError):
+            return "[]"
+        return json.dumps(decoded) if isinstance(decoded, list) else "[]"
+    return "[]"
+
+
 class StorageBackend(abc.ABC):
     """What core code is allowed to assume about persistence."""
 
@@ -100,7 +112,7 @@ class SQLBackend(StorageBackend):
                 f.get("body", ""),
                 f.get("project"),
                 float(f.get("importance", 0.5)),
-                json.dumps(f.get("tags", [])),
+                _json_list(f.get("tags")),
                 f.get("source", "manual"),
                 f.get("agent_key"),
                 f.get("session_id"),
@@ -165,11 +177,11 @@ class SQLBackend(StorageBackend):
         if kind == "person":
             cols = ("id", "name", "role", "team", "aliases", "notes", "created_at", "updated_at")
             vals = (eid, f["name"], f.get("role"), f.get("team"),
-                    json.dumps(f.get("aliases", [])), f.get("notes", ""), created_at, updated_at)
+                    _json_list(f.get("aliases")), f.get("notes", ""), created_at, updated_at)
         elif kind == "system":
             cols = ("id", "name", "purpose", "owner_id", "notes", "links", "created_at", "updated_at")
             vals = (eid, f["name"], f.get("purpose", ""), f.get("owner_id"),
-                    f.get("notes", ""), json.dumps(f.get("links", [])), created_at, updated_at)
+                    f.get("notes", ""), _json_list(f.get("links")), created_at, updated_at)
         else:
             cols = ("id", "external_ref", "title", "status", "notes", "created_at", "updated_at")
             vals = (eid, f.get("external_ref"), f["title"], f.get("status", "open"),
