@@ -1,5 +1,6 @@
 """Repository behaviour: validation, link resolution, recall assembly, export."""
 
+import json
 import os
 import tempfile
 import unittest
@@ -134,14 +135,60 @@ class TestExport(RepoCase):
         self.assertIn("exported_at", data)
 
     def test_redacted_export_keeps_structure_and_drops_content(self):
-        self.repo.capture("decision", "Confidential title", "secret body",
-                          links=[("person", "Jane Doe")])
+        memory_id = self.repo.capture(
+            "decision",
+            "memory-title-sentinel",
+            "memory-body-sentinel",
+            project="/Users/jane/clients/acme-bank",
+            tags=["memory-tags-sentinel"],
+            source="memory-source-sentinel",
+            agent_key="memory-agent-sentinel",
+            session_id="memory-session-sentinel",
+        )
+        person_id = self.backend.add_entity(
+            "person",
+            name="person-name-sentinel",
+            role="person-role-sentinel",
+            team="person-team-sentinel",
+            aliases=["person-alias-sentinel"],
+            notes="person-notes-sentinel",
+        )
+        system_id = self.backend.add_entity(
+            "system",
+            name="system-name-sentinel",
+            purpose="system-purpose-sentinel",
+            notes="system-notes-sentinel",
+            links=["system-links-sentinel"],
+        )
+        self.backend.add_link(memory_id, "person", person_id)
+        self.backend.add_link(memory_id, "system", system_id)
+
         data = self.repo.export(redact=True)
-        blob = str(data)
-        self.assertNotIn("Confidential title", blob)
-        self.assertNotIn("secret body", blob)
-        self.assertNotIn("Jane Doe", blob)
+        blob = json.dumps(data)
+        for sentinel in (
+            "memory-title-sentinel",
+            "memory-body-sentinel",
+            "/Users/jane/clients/acme-bank",
+            "memory-tags-sentinel",
+            "memory-source-sentinel",
+            "memory-agent-sentinel",
+            "memory-session-sentinel",
+            "person-name-sentinel",
+            "person-role-sentinel",
+            "person-team-sentinel",
+            "person-alias-sentinel",
+            "person-notes-sentinel",
+            "system-name-sentinel",
+            "system-purpose-sentinel",
+            "system-notes-sentinel",
+            "system-links-sentinel",
+        ):
+            self.assertNotIn(sentinel, blob)
         self.assertEqual(len(data["memories"]), 1)
+        self.assertEqual(data["memories"][0]["id"], memory_id)
+        self.assertEqual(data["memories"][0]["type"], "decision")
+        self.assertEqual(data["people"][0]["id"], person_id)
+        self.assertEqual(data["systems"][0]["id"], system_id)
         self.assertTrue(data["redacted"])
 
 

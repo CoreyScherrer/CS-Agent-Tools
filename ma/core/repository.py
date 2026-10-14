@@ -159,14 +159,11 @@ class Repository:
         }
         if redact:
             data["redacted"] = True
-            for memory in data["memories"]:
-                memory["title"] = "[redacted]"
-                memory["body"] = "[redacted]"
+            _redact_rows(data["memories"], {
+                "id", "type", "importance", "pinned", "created_at", "updated_at", "expires_at",
+            })
             for key in ("people", "systems", "work_items"):
-                for row in data[key]:
-                    for field in ("name", "title", "notes", "purpose", "role", "team", "external_ref"):
-                        if field in row and row[field]:
-                            row[field] = "[redacted]"
+                _redact_rows(data[key], {"id", "owner_id", "status", "created_at", "updated_at"})
         return data
 
     def import_data(self, data, skip_existing=True):
@@ -256,3 +253,10 @@ def decode_tags(raw):
         return value if isinstance(value, list) else []
     except (TypeError, ValueError):
         return []
+
+
+def _redact_rows(rows, allowed_fields):
+    for row in rows:
+        for field, value in row.items():
+            if field not in allowed_fields and value not in (None, "", "[]"):
+                row[field] = "[redacted]"
