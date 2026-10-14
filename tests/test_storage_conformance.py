@@ -33,6 +33,11 @@ class BackendConformanceMixin:
         self.assertEqual(stored["type"], "decision")
         self.assertEqual(stored["source"], "manual")
 
+    def test_add_memory_preserves_created_at(self):
+        created_at = "2025-01-01T00:00:00+00:00"
+        mid = self.backend.add_memory(type="decision", title="old", created_at=created_at)
+        self.assertEqual(self.backend.get_memory(mid)["created_at"], created_at)
+
     def test_tags_round_trip_as_json_text(self):
         mid = self.backend.add_memory(type="learning", title="t", tags=["a", "b"])
         self.assertEqual(self.backend.get_memory(mid)["tags"], '["a", "b"]')

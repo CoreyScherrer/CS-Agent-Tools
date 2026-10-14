@@ -212,7 +212,9 @@ class Repository:
 
         for link in data.get("links", []):
             try:
-                self.backend.add_link(link["memory_id"], link["entity_type"], link["entity_id"])
+                self.backend.add_link(
+                    link["memory_id"], link["entity_type"], link["entity_id"], link.get("created_at")
+                )
                 stats["links"] += 1
             except Exception:
                 stats["skipped"] += 1

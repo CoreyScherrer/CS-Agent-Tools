@@ -86,6 +86,8 @@ class SQLBackend(StorageBackend):
     def add_memory(self, **f):
         ts = now_iso()
         mid = f.get("id") or new_id()
+        created_at = f.get("created_at") or ts
+        updated_at = f.get("updated_at") or created_at
         self.execute(
             """INSERT INTO memories
                (id, type, title, body, project, importance, tags, source,
@@ -103,8 +105,8 @@ class SQLBackend(StorageBackend):
                 f.get("agent_key"),
                 f.get("session_id"),
                 1 if f.get("pinned") else 0,
-                ts,
-                ts,
+                created_at,
+                updated_at,
                 f.get("expires_at"),
             ),
         )
@@ -158,18 +160,20 @@ class SQLBackend(StorageBackend):
         table = schema.ENTITY_TABLES[kind]
         ts = now_iso()
         eid = f.get("id") or new_id()
+        created_at = f.get("created_at") or ts
+        updated_at = f.get("updated_at") or created_at
         if kind == "person":
             cols = ("id", "name", "role", "team", "aliases", "notes", "created_at", "updated_at")
             vals = (eid, f["name"], f.get("role"), f.get("team"),
-                    json.dumps(f.get("aliases", [])), f.get("notes", ""), ts, ts)
+                    json.dumps(f.get("aliases", [])), f.get("notes", ""), created_at, updated_at)
         elif kind == "system":
             cols = ("id", "name", "purpose", "owner_id", "notes", "links", "created_at", "updated_at")
             vals = (eid, f["name"], f.get("purpose", ""), f.get("owner_id"),
-                    f.get("notes", ""), json.dumps(f.get("links", [])), ts, ts)
+                    f.get("notes", ""), json.dumps(f.get("links", [])), created_at, updated_at)
         else:
             cols = ("id", "external_ref", "title", "status", "notes", "created_at", "updated_at")
             vals = (eid, f.get("external_ref"), f["title"], f.get("status", "open"),
-                    f.get("notes", ""), ts, ts)
+                    f.get("notes", ""), created_at, updated_at)
         placeholders = ",".join("?" * len(cols))
         self.execute(
             "INSERT INTO {} ({}) VALUES ({})".format(table, ",".join(cols), placeholders),
@@ -196,11 +200,11 @@ class SQLBackend(StorageBackend):
 
     # ---- links ----------------------------------------------------------
 
-    def add_link(self, memory_id, entity_type, entity_id):
+    def add_link(self, memory_id, entity_type, entity_id, created_at=None):
         try:
             self.execute(
                 "INSERT INTO links (memory_id, entity_type, entity_id, created_at) VALUES (?,?,?,?)",
-                (memory_id, entity_type, entity_id, now_iso()),
+                (memory_id, entity_type, entity_id, created_at or now_iso()),
             )
             self.commit()
         except Exception:

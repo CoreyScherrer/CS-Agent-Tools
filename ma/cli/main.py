@@ -302,7 +302,9 @@ def cmd_migrate(args):
 
     for memory in source.list_memories(limit=1000000, include_expired=True):
         for link in source.links_for_memory(memory["id"]):
-            target.add_link(link["memory_id"], link["entity_type"], link["entity_id"])
+            target.add_link(
+                link["memory_id"], link["entity_type"], link["entity_id"], link.get("created_at")
+            )
 
     print("migrated {} memories to PostgreSQL".format(moved))
     print("SQLite source left intact at {}".format(source.path))
