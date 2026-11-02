@@ -120,6 +120,29 @@ rm data/memory.db
 python3 -m ma init
 ```
 
+## `doctor` chose SQLite although PostgreSQL works
+
+Seen on a first real install (a Mac with Homebrew PostgreSQL). Before this fix,
+`doctor` tested login by running `psql`, and only with the `PG*` environment.
+With `psql` off `PATH`, or a login that only works through your DSN, it reported
+"server reachable but not authenticated" and picked SQLite.
+
+`doctor` now connects with the DSN the archive will actually use:
+
+```bash
+export MA_POSTGRES_DSN='postgresql://<role>:<password>@127.0.0.1:5432/<db>'
+python3 -m ma doctor --write
+```
+
+Two related things from the same install:
+
+- The driver has to be in the Python that runs `ma`. Homebrew's Python refuses a
+  global `pip install`, so make a venv in the repo (`python3 -m venv .venv`,
+  then `.venv/bin/pip install "psycopg[binary]"`) and run `.venv/bin/python -m ma`.
+  `.venv/` is gitignored.
+- `config.local.json` holds the DSN and its password. `ma doctor --write` now
+  saves it owner-only (`0600`). If yours was written earlier, run `chmod 600 config.local.json`.
+
 ## Diagnostics worth including in a report
 
 ```bash

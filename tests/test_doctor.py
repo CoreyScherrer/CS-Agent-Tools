@@ -119,3 +119,61 @@ class TestReportFormatting(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPostgresProbeUsesConfiguredDsn(unittest.TestCase):
+    """A configured DSN is what the archive will use, so it is what gets tested."""
+
+    def setUp(self):
+        from unittest import mock
+        self.mock = mock
+        # Pretend a server answers and a driver is importable.
+        self.patches = [
+            mock.patch.object(doctor.socket, "create_connection", mock.MagicMock()),
+            mock.patch("ma.storage.postgres_backend.driver_available", return_value=True),
+        ]
+        for p in self.patches:
+            p.start()
+
+    def tearDown(self):
+        for p in self.patches:
+            p.stop()
+
+    def test_working_dsn_is_selected_without_psql(self):
+        with self.mock.patch.object(doctor, "_try_dsn", return_value=(True, "")), \
+             self.mock.patch.object(doctor.shutil, "which", return_value=None):
+            probe = doctor.probe_postgres("postgresql://u:pw@127.0.0.1:5433/db")
+        self.assertEqual(probe.status, doctor.OK)
+        backend, _ = doctor.recommend_backend([probe])
+        self.assertEqual(backend, "postgres")
+
+    def test_rejected_dsn_falls_back_and_never_echoes_it(self):
+        with self.mock.patch.object(doctor, "_try_dsn", return_value=(False, "OperationalError")):
+            probe = doctor.probe_postgres("postgresql://u:s3cret@127.0.0.1/db")
+        self.assertEqual(probe.status, doctor.WARN)
+        self.assertNotIn("s3cret", probe.summary + repr(probe.detail))
+        self.assertEqual(doctor.recommend_backend([probe])[0], "sqlite")
+
+    def test_dsn_host_and_port_are_probed(self):
+        with self.mock.patch.object(doctor, "_try_dsn", return_value=(True, "")):
+            doctor.probe_postgres("postgresql://u@db.internal:6543/x")
+        doctor.socket.create_connection.assert_called_with(("db.internal", 6543), timeout=2)
+
+    def test_no_dsn_and_no_psql_says_why(self):
+        with self.mock.patch.object(doctor.shutil, "which", return_value=None):
+            probe = doctor.probe_postgres(None)
+        self.assertEqual(probe.status, doctor.WARN)
+        self.assertIn("psql is not on PATH", probe.summary)
+
+
+class TestLocalConfigPermissions(unittest.TestCase):
+    def test_saved_config_is_owner_only(self):
+        import stat
+        import tempfile
+        from unittest import mock
+        from ma import config as config_mod
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "config.local.json")
+            with mock.patch.object(config_mod, "LOCAL_CONFIG", path):
+                config_mod.save_local({"storage": {"postgres_dsn": "postgresql://u:pw@h/d"}})
+            self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
