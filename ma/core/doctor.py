@@ -90,11 +90,44 @@ def probe_pip():
     return Probe("pip", OK, out.strip()[:120], {"index_check": "not attempted (offline-safe)"})
 
 
-def probe_postgres():
-    """Three separate checks: client present, server reachable, DB creatable.
+def _dsn_host_port(dsn):
+    """Host and port from a URL-form DSN; ``(None, None)`` for anything else."""
+    from urllib.parse import urlsplit
+    if not dsn or "://" not in dsn:
+        return None, None
+    try:
+        parts = urlsplit(dsn)
+        return parts.hostname, parts.port
+    except ValueError:
+        return None, None
+
+
+def _try_dsn(dsn):
+    """Connect with the configured DSN through the driver. Returns (ok, error).
+
+    The error is the exception's class name only: a driver message can echo the
+    DSN, and the DSN can carry a password.
+    """
+    from ..storage.postgres_backend import _load_driver
+    try:
+        driver, _version = _load_driver()
+        conn = driver.connect(dsn, connect_timeout=PROBE_TIMEOUT)
+        conn.close()
+        return True, ""
+    except Exception as exc:  # any failure means "not usable"; reported, not raised
+        return False, type(exc).__name__
+
+
+def probe_postgres(dsn=None):
+    """Three separate checks: client present, server reachable, DB usable.
 
     They are distinct on purpose — a psql binary on PATH says nothing about
     whether a server exists or whether this user may create a database.
+
+    When a DSN is configured (``MA_POSTGRES_DSN`` or ``config.local.json``) it is
+    what the archive will actually use, so authentication is tested by
+    connecting with it through the driver. Without one, ``psql`` and the
+    ``PG*`` environment stand in.
     """
     from ..storage.postgres_backend import driver_available
 
@@ -105,8 +138,10 @@ def probe_postgres():
         "can_create_db": False,
     }
 
-    host = os.environ.get("PGHOST", "127.0.0.1")
-    port = int(os.environ.get("PGPORT", "5432"))
+    dsn_host, dsn_port = _dsn_host_port(dsn)
+    host = dsn_host or os.environ.get("PGHOST", "127.0.0.1")
+    port = int(dsn_port or os.environ.get("PGPORT", "5432"))
+    detail["configured_dsn"] = bool(dsn)
     try:
         with socket.create_connection((host, port), timeout=2):
             detail["server_reachable"] = True
@@ -121,6 +156,22 @@ def probe_postgres():
     if not detail["driver_installed"]:
         return Probe("postgres", WARN,
                      "server reachable but no psycopg driver installed", detail)
+
+    if dsn:
+        ok, err = _try_dsn(dsn)
+        detail["can_create_db"] = ok
+        if not ok:
+            detail["dsn_error"] = err
+            return Probe("postgres", WARN,
+                         "configured DSN did not connect ({})".format(err), detail)
+        return Probe("postgres", OK,
+                     "PostgreSQL usable at {}:{} with the configured DSN".format(host, port),
+                     detail)
+
+    if not detail["psql_on_path"]:
+        return Probe("postgres", WARN,
+                     "server reachable but psql is not on PATH, so login could not be "
+                     "tested - set MA_POSTGRES_DSN and re-run", detail)
 
     rc, out = _run(["psql", "-h", host, "-p", str(port), "-lqt"], timeout=PROBE_TIMEOUT)
     detail["can_create_db"] = rc == 0
@@ -224,11 +275,11 @@ def probe_git(repo_root):
 
 # ---- orchestration ------------------------------------------------------
 
-def run_all(repo_root):
+def run_all(repo_root, dsn=None):
     return [
         _safe("python", probe_python),
         _safe("pip", probe_pip),
-        _safe("postgres", probe_postgres),
+        _safe("postgres", lambda: probe_postgres(dsn)),
         _safe("filesystem", lambda: probe_filesystem(repo_root)),
         _safe("editor", probe_editor_surface),
         _safe("hooks", lambda: probe_hooks(repo_root)),

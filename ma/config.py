@@ -95,8 +95,13 @@ def _coerce(reference, raw):
 
 
 def save_local(cfg):
-    """Persist resolved settings to the gitignored local config."""
-    with open(LOCAL_CONFIG, "w", encoding="utf-8") as fh:
+    """Persist resolved settings to the gitignored local config.
+
+    Owner-only (0600): a PostgreSQL DSN in here usually carries a password.
+    """
+    fd = os.open(LOCAL_CONFIG, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    os.chmod(LOCAL_CONFIG, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
         json.dump(cfg, fh, indent=2, sort_keys=True)
         fh.write("\n")
     return LOCAL_CONFIG

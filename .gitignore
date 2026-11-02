@@ -9,6 +9,10 @@ data/
 # Machine-local configuration (written by `ma doctor --write`)
 config.local.json
 
+# Virtualenvs (a Postgres driver is installed into one)
+.venv/
+venv/
+
 # Secrets
 .env
 *.env
