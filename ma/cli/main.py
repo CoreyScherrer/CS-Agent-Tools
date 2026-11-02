@@ -55,7 +55,8 @@ def _print_memory(memory, verbose=False):
 # ---- commands -----------------------------------------------------------
 
 def cmd_doctor(args):
-    probes = doctor_mod.run_all(config_mod.REPO_ROOT)
+    dsn = config_mod.load().get("storage", {}).get("postgres_dsn") or None
+    probes = doctor_mod.run_all(config_mod.REPO_ROOT, dsn=dsn)
     backend, reason = doctor_mod.recommend_backend(probes)
     print(doctor_mod.format_report(probes, backend, reason))
 
