@@ -24,7 +24,7 @@ The layout engine ([elkjs](https://github.com/kieler/elkjs) 0.9.3, EPL-2.0) and 
 ## The local server
 
 - It listens on `127.0.0.1` only, so other machines on your network can't reach it.
-- The map opens only from its own link: the address the server opens and prints, ending in `?k=` and a key. The key is remembered in a cookie and kept in `floorplan/.cache`, which only your account can read (not enforced on Windows). Without it the server shows no map and no files, so another account on the computer can't load the page.
+- The map opens only from its own link: the address the server opens and prints, ending in `?k=` and a key. The key stays in the map's address, is never put in a cookie, and is kept in `floorplan/.cache`, which only your account can read (not enforced on Windows). Without it the server shows no map and no files, so another account on the computer can't load the page.
 - Every start creates a random token, which only the map page it serves receives. Asking questions and saving flows require that token, and those requests are refused when they come from another website.
 - It answers only to `127.0.0.1` and `localhost` at its own port, so a website that points its own domain at your computer (DNS rebinding) can't load the map or its token.
 - Questions run Claude with **read-only** tools: reading files, searching, the map's own lookup script, and the shell commands Claude Code treats as read-only. It can't edit files, reach the network or run other commands. With a Claude Code that has restricted mode, the run also leaves out your settings files, their allow rules and your MCP servers, and reads only inside the project. With an older one, whatever your own settings allow applies to these runs too.
