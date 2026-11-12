@@ -119,6 +119,9 @@ test('the Claude Code CLI comes first for a map Claude built, with read-only too
   assert.deepEqual(first.args.slice(first.args.indexOf('--allowedTools') + 1), ['Bash(node floorplan/query.mjs:*)', 'Read', 'Grep', 'Glob']);
   assert.equal(first.input, 'How do refunds work?');
   assert.equal(second.args[second.args.indexOf('--resume') + 1], 'test-session');
+  // the cache folder holds the server's token, and is never served, however it is spelled
+  for (const p of ['/.cache/server.json', '/.CACHE/server.json', '/.Cache/graph.json']) assert.equal((await fetch(s.base + p)).status, 404, p);
+  assert.equal((await fetch(s.base + '/graph.json')).status, 200);
   // a session id this server never handed out is dropped, so it can't be read as another option
   await ask(s, 'And now?', '--dangerously-skip-permissions');
   const third = s.calls()[2];

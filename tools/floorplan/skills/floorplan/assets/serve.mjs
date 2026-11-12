@@ -633,8 +633,10 @@ const server = http.createServer((req, res) => {
   let file;
   try { file = path.join(here, decodeURIComponent(url.pathname)); } catch { res.writeHead(400); return res.end('bad address'); }
   // inside this folder only: a neighbour like ../floorplan-old/ also starts with this folder's path
-  // and never the cache folder: it holds this server's token and the map's working files, which the page doesn't load
-  if (!file.startsWith(here + path.sep) || file.startsWith(path.join(here, '.cache') + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end('not found'); }
+  // and never the cache folder: it holds this server's token and the map's working files, which the page doesn't load.
+  // Any spelling of it: on macOS and Windows .CACHE is the same folder.
+  const inCache = path.relative(here, file).split(path.sep).some((part) => part.toLowerCase() === '.cache');
+  if (!file.startsWith(here + path.sep) || inCache || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end('not found'); }
   res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
   fs.createReadStream(file).pipe(res);
 });

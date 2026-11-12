@@ -55,5 +55,5 @@ test('the map server takes any JSON body and never serves its cache folder', () 
   const serve = fs.readFileSync(path.join(SKILL, 'assets', 'serve.mjs'), 'utf8');
   assert.doesNotMatch(serve, /body = JSON\.parse\(raw\)/, 'every body goes through parseBody');
   assert.equal(serve.split('const body = parseBody(raw);').length - 1, 5);
-  assert.match(serve, /file\.startsWith\(path\.join\(here, '\.cache'\) \+ path\.sep\)/);
+  assert.match(serve, /some\(\(part\) => part\.toLowerCase\(\) === '\.cache'\)/);
 });
