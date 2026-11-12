@@ -224,6 +224,8 @@ const customFile = path.join(outDir, 'custom-flows.json');
 if (fs.existsSync(customFile)) {
   let custom = [];
   try { custom = JSON.parse(fs.readFileSync(customFile, 'utf8')).flows || []; } catch (e) { warn(`custom-flows.json is not valid JSON: ${e.message}`); }
+  // the file can be edited by hand: anything that is not a list of flows with a list of steps is left out, not fatal
+  if (!Array.isArray(custom)) { warn('custom-flows.json: "flows" is not a list, so it was left out.'); custom = []; }
   const routeAt = new Map(routesIn.map((r, i) => [routeKey(r), i]));
   const resolveStep = (ref) => {
     if (typeof ref !== 'string') return null;
@@ -239,8 +241,9 @@ if (fs.existsSync(customFile)) {
   };
   let dropped = 0;
   for (const fl of custom) {
-    const steps = (fl.steps || []).map((s) => ({ ref: resolveStep(s.ref), note: s.note || '' })).filter((s) => s.ref);
-    dropped += (fl.steps || []).length - steps.length;
+    const asked = Array.isArray(fl?.steps) ? fl.steps : [];
+    const steps = asked.map((s) => ({ ref: resolveStep(s?.ref), note: isStr(s?.note) ? s.note : '' })).filter((s) => s.ref);
+    dropped += asked.length - steps.length;
     if (steps.length >= 2 && isStr(fl.id) && !outFlows.some((x) => x.id === fl.id)) outFlows.push({ id: fl.id, title: fl.title || 'Flow', description: fl.description || '', steps, custom: true });
   }
   if (dropped) warn(`${dropped} step(s) in custom-flows.json point at code that no longer exists and were left out.`);
@@ -441,18 +444,20 @@ const fontCss = [['Inter', 'inter'], ['JetBrains Mono', 'jetbrains-mono']].flatM
 const graphQuery = fs.readFileSync(path.join(SKILL_DIR, 'assets', 'graph-query.js'), 'utf8');
 // The map's data comes from the scanned code (file names, descriptions), which may be someone else's. Inside
 // the page's <script> it must stay data: every <, > and & is written as a \u escape, so no name can close the
-// script, open a comment or look like one of the placeholders below. It also goes in last, after every other
-// placeholder is filled, so nothing in it is ever taken for a placeholder.
+// script, open a comment or look like one of the placeholders below. The template is cut at the data's slot
+// before anything is filled in, and the data joins the two halves last: nothing in the data is ever taken for a
+// placeholder, and no other value (the project name in the title) can take the data's slot.
 const scriptJson = (v) => JSON.stringify(v).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-const page = (g) => template
+const DATA_SLOT = '/*__FLOORPLAN_DATA__*/null';
+const fill = (part) => part
   .replace('<!--__UI_EXTENSIONS__-->', () => uiScripts)
   .replace('/*__GRAPH_QUERY__*/', () => graphQuery.replace(/<\/script/gi, '<\\/script'))
   .replace('<!--__ELK_SCRIPT__-->', () => elkTag)
   .replace('/*__FONTS__*/', () => fontCss)
   .replace(/__FLOORPLAN_TITLE__/g, () => escapeHtml(`${arch.project.name} map`))
   .replace(/__FLOORPLAN_LOGO__/g, () => dataUri('logo.png'))
-  .replace(/__FLOORPLAN_FAVICON__/g, () => dataUri('favicon.png'))
-  .replace('/*__FLOORPLAN_DATA__*/null', () => scriptJson(g));
+  .replace(/__FLOORPLAN_FAVICON__/g, () => dataUri('favicon.png'));
+const page = (g) => { const at = template.indexOf(DATA_SLOT); return fill(template.slice(0, at)) + scriptJson(g) + fill(template.slice(at + DATA_SLOT.length)); };
 const uiDir = path.join(SKILL_DIR, 'assets', 'ui');
 const uiScripts = fs.existsSync(uiDir) ? fs.readdirSync(uiDir).filter((n) => n.endsWith('.js')).sort().map((n) => `<script>/* ui/${n} */\n${fs.readFileSync(path.join(uiDir, n), 'utf8').replace(/<\/script/gi, '<\\/script')}</script>`).join('\n') : '';
 const html = page(graph);

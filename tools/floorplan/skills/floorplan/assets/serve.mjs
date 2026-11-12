@@ -258,7 +258,7 @@ fs.watchFile(path.join(here, 'index.html'), { interval: 1000 }, (cur, prev) => {
 });
 if (idleExit) setInterval(() => { if (!tabs.size && !running.size && Date.now() - lastTab > idleExit) process.exit(0); }, 60000).unref();
 const flowsFile = path.join(here, 'custom-flows.json');
-const readFlows = () => { try { return JSON.parse(fs.readFileSync(flowsFile, 'utf8')).flows || []; } catch { return []; } };
+const readFlows = () => { try { const f = JSON.parse(fs.readFileSync(flowsFile, 'utf8')).flows; return Array.isArray(f) ? f.filter((x) => x && typeof x === 'object') : []; } catch { return []; } };
 
 // ---------- Floorplan Cloud waitlist (opt-in) ----------
 // The map may ask, once, whether you want an email when Floorplan Cloud launches. Nothing is sent unless
@@ -406,6 +406,8 @@ function runAgent(res, send, body) {
   return new Promise((resolve, reject) => {
     const run = ENGINES[engine].run(body, MODES[body.mode] || MODES.ask);
     const child = spawn(cli.cmd, run.args, { cwd: root, env: cliEnv(), stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+    // decode as one stream: a character split across two chunks must not turn into \uFFFD
+    child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8');
     const id = crypto.randomBytes(6).toString('hex');
     running.set(id, child);
     send('start', { id });
@@ -587,7 +589,9 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
           const body = parseBody(raw);
           let flows = readFlows().filter((x) => x.id !== body.id && x.id !== body.flow?.id);
-          if (req.method === 'POST' && body.flow?.id && Array.isArray(body.flow.steps)) flows.push({ ...body.flow, createdAt: new Date().toISOString() });
+          // stored as checked and trimmed as an exported flow: build.mjs reads this file on every build
+          const [flow] = req.method === 'POST' ? cleanFlows([body.flow]) : [];
+          if (flow) flows.push({ ...flow, createdAt: new Date().toISOString() });
           fs.writeFileSync(flowsFile, JSON.stringify({ flows }, null, 2) + '\n');
           res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ flows }));
         });
