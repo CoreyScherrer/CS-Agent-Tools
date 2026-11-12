@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { REPO, shopApp, run, cleanup } from './helpers.mjs';
+import { REPO, shopApp, run, cleanup, mapLink } from './helpers.mjs';
 
 const FAKE = path.join(REPO, 'tests', 'fixtures', 'fake-cli');
 let root;
@@ -26,7 +26,7 @@ async function serve(env) {
     server.stdout.on('data', (d) => { out += d; const m = /Floorplan: (http:\/\/\S+)/.exec(out); if (m) { clearTimeout(timer); resolve(m[1]); } });
     server.on('exit', (code) => reject(new Error(`server exited (${code}): ${out}`)));
   });
-  const html = await (await fetch(base + '/')).text();
+  const html = await (await fetch(mapLink(root))).text();
   const page = JSON.parse(/window\.FLOORPLAN_SERVER=(\{.*?\});/.exec(html)[1]);
   return { base, token: page.token, page, calls: () => fs.readFileSync(log, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) };
 }
@@ -117,15 +117,29 @@ test('the Claude Code CLI comes first for a map Claude built, with read-only too
   const [first, second] = s.calls();
   assert.ok(first.args.includes('-p'));
   assert.deepEqual(first.args.slice(first.args.indexOf('--allowedTools') + 1), ['Bash(node floorplan/query.mjs:*)', 'Read', 'Grep', 'Glob']);
+  // this stand-in is an older Claude Code, without restricted mode: it is not asked for it
+  assert.ok(!first.args.includes('--restricted') && !first.args.includes('--strict-mcp-config'));
+  assert.equal(s.page.restricted, false);
   assert.equal(first.input, 'How do refunds work?');
   assert.equal(second.args[second.args.indexOf('--resume') + 1], 'test-session');
   // the cache folder holds the server's token, and is never served, however it is spelled
-  for (const p of ['/.cache/server.json', '/.CACHE/server.json', '/.Cache/graph.json']) assert.equal((await fetch(s.base + p)).status, 404, p);
-  assert.equal((await fetch(s.base + '/graph.json')).status, 200);
+  const k = '?k=' + new URL(mapLink(root)).searchParams.get('k');
+  for (const p of ['/.cache/server.json', '/.CACHE/server.json', '/.Cache/graph.json', '/.cache/key']) assert.equal((await fetch(s.base + p + k)).status, 404, p);
+  assert.equal((await fetch(s.base + '/graph.json' + k)).status, 200);
   // a session id this server never handed out is dropped, so it can't be read as another option
   await ask(s, 'And now?', '--dangerously-skip-permissions');
   const third = s.calls()[2];
   assert.ok(!third.args.includes('--resume') && !third.args.includes('--dangerously-skip-permissions'));
+});
+
+test('a Claude Code with restricted mode answers without the person\'s settings or MCP servers', async () => {
+  const s = await serve({ FLOORPLAN_CLAUDE: path.join(FAKE, 'fake-claude.mjs'), FLOORPLAN_CODEX: path.join(root, 'no-such-cli'), FAKE_RESTRICTED: '1' });
+  assert.equal(s.page.restricted, true);
+  await ask(s, 'How do refunds work?');
+  const [call] = s.calls();
+  assert.deepEqual(call.args.slice(call.args.indexOf('-p'), call.args.indexOf('-p') + 3), ['-p', '--restricted', '--strict-mcp-config']);
+  // Bash stays, named by --tools, for the map's lookup script
+  assert.equal(call.args[call.args.indexOf('--tools') + 1], 'Read,Grep,Glob,Bash');
 });
 
 test('--engine picks one CLI and never falls back to the other', async () => {

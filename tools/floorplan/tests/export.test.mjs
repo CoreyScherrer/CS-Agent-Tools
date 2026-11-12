@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
-import { shopApp, run, readJson, writeJson, cleanup, FAKE_PASSWORD } from './helpers.mjs';
+import { shopApp, run, readJson, writeJson, cleanup, FAKE_PASSWORD, mapLink } from './helpers.mjs';
 
 const TOKEN_IN_REMOTE = 'ghp-not-a-real-token-1234';
 let root, server, base, token;
@@ -43,7 +43,7 @@ before(async () => {
     server.stdout.on('data', (d) => { out += d; const m = /Floorplan: (http:\/\/\S+)/.exec(out); if (m) { clearTimeout(timer); resolve(m[1]); } });
     server.on('exit', (code) => reject(new Error(`server exited (${code}): ${out}`)));
   });
-  token = /"token":"([0-9a-f]+)"/.exec(await (await fetch(base + '/')).text())[1];
+  token = /"token":"([0-9a-f]+)"/.exec(await (await fetch(mapLink(root))).text())[1];
 });
 after(async () => {
   if (server && server.exitCode === null) await new Promise((resolve) => { server.once('exit', resolve); server.kill(); });

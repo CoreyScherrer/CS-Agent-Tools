@@ -82,7 +82,7 @@ The map is a folder in your project. Either:
 node floorplan/serve.mjs
 ```
 
-serves it at http://127.0.0.1:4378 with a working Ask bar, or double-click `floorplan/index.html`, where everything works except asking questions.
+serves it at http://127.0.0.1:4378 with a working Ask bar (it opens the map for you; to open it yourself use the whole address it prints after `open:`), or double-click `floorplan/index.html`, where everything works except asking questions.
 
 When the map is opened for you, the server runs in the background and stops by itself two hours after you close the last tab. To stop it sooner:
 

@@ -53,7 +53,7 @@ if (status && status.hash !== hash) {
 if (!status) {
   const pass = ['port', 'engine', 'model', 'claude', 'codex'].flatMap((k) => (args[k] ? ['--' + k, String(args[k])] : []));
   if (!args.port && s?.port) pass.push('--port', String(s.port)); // keep the address people have open
-  fs.mkdirSync(path.dirname(stateFile), { recursive: true });
+  fs.mkdirSync(path.dirname(stateFile), { recursive: true, mode: 0o700 }); // holds the server's token: this account only
   const log = fs.openSync(path.join(dir, '.cache', 'server.log'), 'w');
   const prev = s?.pid;
   spawn(process.execPath, [serveFile, '--no-open', '--idle-exit', String(IDLE_MINUTES), ...pass], {
@@ -77,9 +77,10 @@ const health = await api(s, '/api/health');
 let shown;
 if (status.tabs > 0) shown = `already open in ${status.tabs === 1 ? 'a browser tab' : status.tabs + ' browser tabs'}, which reloaded with the latest map`;
 else if (args['no-open']) shown = 'not opened in a browser (--no-open): open the URL yourself';
-else shown = openBrowser(s.url) ? 'opened in the browser' : 'could not open a browser: open the URL yourself';
+else shown = openBrowser(s.open || s.url) ? 'opened in the browser' : 'could not open a browser: open the URL yourself';
 
-console.log(`FLOORPLAN  ${s.url}  (${shown})`);
+// the whole address, key included: the server shows the map only to a browser that came through it
+console.log(`FLOORPLAN  ${s.open || s.url}  (${shown})`);
 const CLI = {
   claude: { name: 'the Claude Code CLI', docs: 'https://docs.claude.com/en/docs/claude-code' },
   codex: { name: 'Codex', docs: 'https://developers.openai.com/codex' },

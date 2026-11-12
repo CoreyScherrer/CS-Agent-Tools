@@ -117,7 +117,9 @@ test('it runs a fixed list of programs, and never through a shell', () => {
   assert.match(read(path.join(SKILL, 'scripts', 'refresh.mjs')), /const node = process\.execPath;/);
   // the browser openers open the map's local address and nothing else
   const openers = /\? \['cmd', \['\/c', 'start', '', u\]\] : process\.platform === 'darwin' \? \['open', \[u\]\] : \['xdg-open', \[u\]\]/;
-  assert.match(read(path.join(SKILL, 'assets', 'serve.mjs')), openers);
+  // serve.mjs opens the same address with the map's page key on it
+  assert.match(read(path.join(SKILL, 'assets', 'serve.mjs')), /const link = `\$\{u\}\/\?k=\$\{pageKey\}`;/);
+  assert.match(read(path.join(SKILL, 'assets', 'serve.mjs')), /\? \['cmd', \['\/c', 'start', '', link\]\] : process\.platform === 'darwin' \? \['open', \[link\]\] : \['xdg-open', \[link\]\]/);
   assert.match(read(path.join(SKILL, 'scripts', 'open.mjs')), openers);
 });
 

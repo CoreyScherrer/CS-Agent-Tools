@@ -35,6 +35,8 @@ export function scanAndBuild(root) {
   return run('scan.mjs', root) + run('build.mjs', root, '--no-claude-md');
 }
 
+/** The address that opens a running map: its server's own link, key included (floorplan/.cache/server.json). */
+export const mapLink = (root) => JSON.parse(fs.readFileSync(path.join(root, 'floorplan', '.cache', 'server.json'), 'utf8')).open;
 export const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 export const writeJson = (file, data) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify(data, null, 2)); };
 export const readGraph = (root) => readJson(path.join(root, 'floorplan', 'graph.json'));
