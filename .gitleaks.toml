@@ -1,0 +1,7 @@
+# Secret-scan settings for this repo: gitleaks' default rules, with one reviewed exception.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Floorplan's Health check has a test that builds a made-up private key ('MIIE' + 'abcd' repeated) to prove the check reports it. It is a fixture, not a key."
+paths = ['''^tools/floorplan/tests/false-positives\.test\.mjs$''']

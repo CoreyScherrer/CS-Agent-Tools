@@ -1,0 +1,6 @@
+# Store text with LF line endings so scripts behave the same on every platform
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.woff2 binary

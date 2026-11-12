@@ -1,0 +1,18 @@
+{
+  "name": "floorplan",
+  "owner": {
+    "name": "Hayden Smith",
+    "url": "https://github.com/haydenschmitty"
+  },
+  "metadata": {
+    "description": "Floorplan: an interactive map of your codebase for Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "floorplan",
+      "source": "./",
+      "description": "An interactive map of your codebase: every part, file and web request with a plain-English name and description, plus a health check, screens, guided flows and recent-work highlights.",
+      "category": "productivity"
+    }
+  ]
+}
