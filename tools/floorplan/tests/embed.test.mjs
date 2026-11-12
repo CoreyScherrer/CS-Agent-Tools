@@ -29,6 +29,16 @@ test('the bridge listens only to the parent window and presses only this map\'s 
   assert.match(bridge, /header\.querySelectorAll\('\.hc \.btn, \.hr \.btn'\)\]\.filter\(\(b\) => b\.id && !b\.closest\('#zoom, \.menu'\)\)/);
 });
 
+test('a page around the map that has no origin to name (opened from a file, sandboxed) is posted to as "*", not "null"', () => {
+  assert.match(bridge, /const ancestor = location\.ancestorOrigins\?\.\[0\];\n  const parentOrigin = ancestor && ancestor !== 'null' \? ancestor : '';/);
+  // what the browser does with each: posting to "null" throws, which left the page around the map with no buttons
+  const target = (ancestor) => (ancestor && ancestor !== 'null' ? ancestor : '') || '*';
+  assert.equal(target('null'), '*');
+  assert.equal(target(undefined), '*');
+  assert.equal(target('https://admin.example'), 'https://admin.example');
+  assert.throws(() => new URL('null'), 'a target origin must be "*", "/" or an address');
+});
+
 test('the bridge sends names and states only, never markup', () => {
   const snap = bridge.slice(bridge.indexOf('const snapshot'), bridge.indexOf('let queued'));
   assert.doesNotMatch(snap, /innerHTML|outerHTML/);

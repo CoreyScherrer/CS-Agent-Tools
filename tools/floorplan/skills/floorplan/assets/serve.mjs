@@ -7,10 +7,14 @@
 //        node floorplan/serve.mjs --stop
 //        node floorplan/serve.mjs --export [<file>] [--include flows,notes,recent,health]   (a copy to share; default flows,notes)
 //
-// The server listens on 127.0.0.1 only. Each question runs in the codebase root, on your own account:
-// `claude -p` with read-only tools (Read, Grep, Glob, and Bash limited to floorplan/query.mjs), or
-// `codex exec` in its read-only sandbox. It uses the one that built the map, else whichever is installed.
-// When the map is rebuilt, open tabs reload in place. The running server is recorded in .cache/server.json.
+// The server listens on 127.0.0.1 only, and shows the map only to a browser that opened it from this
+// map's own link (the address with ?k=…, which the server opens and open.mjs prints). Each question runs in
+// the codebase root, on your own account: `claude -p` with Read, Grep, Glob and Bash, where Bash may run
+// floorplan/query.mjs and the read-only commands Claude Code allows by itself, or `codex exec` in its
+// read-only sandbox. With a Claude Code that has restricted mode, your own settings and MCP servers are left
+// out of the run and the file tools stay inside the project. It uses the one that built the map, else
+// whichever is installed. When the map is rebuilt, open tabs reload in place. The running server is
+// recorded in .cache/server.json, which only you can read.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -104,6 +108,21 @@ const idleExit = Number(opt('idle-exit', 0)) * 60000; // stop this long after th
 const selfHash = crypto.createHash('sha1').update(fs.readFileSync(fileURLToPath(import.meta.url))).digest('hex').slice(0, 12);
 const model = opt('model', process.env.FLOORPLAN_MODEL || '');
 const token = crypto.randomBytes(16).toString('hex');
+// The cache folder holds this server's token and the page key: for this account only (no effect on Windows).
+const cacheDir = path.join(here, '.cache');
+function privateCache() { fs.mkdirSync(cacheDir, { recursive: true, mode: 0o700 }); try { fs.chmodSync(cacheDir, 0o700); } catch {} }
+function writePrivate(file, text) { privateCache(); fs.writeFileSync(file, text, { mode: 0o600 }); try { fs.chmodSync(file, 0o600); } catch {} }
+// The page key: what a browser shows to be given the map (and with it the token). Any account on this
+// computer can reach 127.0.0.1, so the address alone is not enough. Kept between starts, so tabs that are
+// open come back by themselves after a restart; the token above is still new every start.
+const pageKey = (() => {
+  const file = path.join(cacheDir, 'key');
+  try { const k = fs.readFileSync(file, 'utf8').trim(); if (/^[0-9a-f]{32}$/.test(k)) { try { fs.chmodSync(file, 0o600); } catch {} return k; } } catch {}
+  const k = crypto.randomBytes(16).toString('hex');
+  try { writePrivate(file, k + '\n'); } catch {}
+  return k;
+})();
+const sameKey = (given) => typeof given === 'string' && given.length === pageKey.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(pageKey));
 const TYPES = { '.html': 'text/html; charset=utf-8', '.json': 'application/json', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 
 // ---------- find the CLI that answers: Claude Code or Codex ----------
@@ -181,10 +200,22 @@ function cliEnv() {
 }
 let version = null;
 if (cli) { try { version = execFileSync(cli.cmd, [...cli.args, '--version'], { encoding: 'utf8', timeout: 15000, stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true }).trim(); } catch {} }
+// Claude Code's restricted mode leaves the person's own settings files (and their allow rules) out of the run,
+// keeps Read, Grep and Glob inside the project, and with --strict-mcp-config starts no MCP servers. Used when
+// the installed CLI has both; an older one runs as before, with whatever its settings allow.
+let restricted = false;
+if (cli && engine === 'claude') {
+  try {
+    const help = execFileSync(cli.cmd, [...cli.args, '--help'], { encoding: 'utf8', timeout: 15000, stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true, env: cliEnv() });
+    restricted = /--restricted\b/.test(help) && /--strict-mcp-config\b/.test(help);
+  } catch {}
+}
 
 // The page, the graph, and the instructions and answer schema (from query.mjs's inlined graph-query
 // code). Loaded at start and again whenever the map is rebuilt.
-const inject = `<script>window.FLOORPLAN_SERVER=${scriptJson({ token, cli: !!cli, engine, want, version, model: model || null, change: canChange })};</script>`;
+// the key is dropped from the address once the page is open (a framed map keeps it: a frame inside another
+// site is sent no cookie, so its address is all it has when it reloads)
+const inject = `<script>window.FLOORPLAN_SERVER=${scriptJson({ token, cli: !!cli, engine, want, version, model: model || null, change: canChange, restricted })};try{if(window.parent===window){const u=new URL(location.href);if(u.searchParams.has('k')){u.searchParams.delete('k');history.replaceState(null,'',u);}}}catch{}</script>`;
 let page, G, core, MODES;
 function load() {
   const html = fs.readFileSync(path.join(here, 'index.html'), 'utf8');
@@ -192,7 +223,7 @@ function load() {
   const coreSrc = fs.readFileSync(path.join(here, 'query.mjs'), 'utf8').split('// ---- cli ----')[0];
   const c = new Function(`${coreSrc.replace(/^import .*$/gm, '')}; return { FLOORPLAN_ANSWER_SCHEMA, FLOORPLAN_FLOW_SCHEMA, FLOORPLAN_CHANGE_SCHEMA, floorplanAskInstructions, floorplanFlowInstructions, floorplanChangeInstructions, createGraphQuery };`)();
   c.q = c.createGraphQuery(g);
-  page = html.replace('</head>', inject + '</head>');
+  page = html.replace('</head>', () => inject + '</head>');
   G = g; core = c;
   // kinds of request: a question (answer + board), a new guided flow, and for a blueprint, a change to the
   // plan. Codex reads its schema from a file.
@@ -324,7 +355,7 @@ const failCode = (msg) => /not logged in|logged out|\/login|log ?in again|sign i
 // Claude Code: `claude -p` with read-only tools, answering in the schema; follow-ups resume its session
 const claudeSessions = new Set(); // the session ids Claude Code has handed back since this server started
 function claudeRun(body, mode) {
-  const args = [...cli.args, '-p', '--output-format', 'stream-json', '--verbose',
+  const args = [...cli.args, '-p', ...(restricted ? ['--restricted', '--strict-mcp-config'] : []), '--output-format', 'stream-json', '--verbose',
     '--json-schema', JSON.stringify(mode.schema), '--append-system-prompt', mode.instructions,
     '--tools', 'Read,Grep,Glob,Bash', '--allowedTools', 'Bash(node floorplan/query.mjs:*)', 'Read', 'Grep', 'Glob'];
   // only a session id Claude Code itself gave this server: anything else could be read as another option
@@ -629,7 +660,18 @@ const server = http.createServer((req, res) => {
     }
     res.writeHead(404); return res.end();
   }
-  if (url.pathname === '/' || url.pathname === '/index.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-store' }); return res.end(page); }
+  // The map and its files go only to a browser that came through this map's own link: ?k=<page key> on the
+  // address, remembered in a cookie for this port. Without it, any account on this computer could load the
+  // page and read the token in it.
+  const cookieName = `fp_${port}`;
+  const cookie = String(req.headers.cookie || '').split(';').map((c) => c.trim()).find((c) => c.startsWith(cookieName + '='))?.slice(cookieName.length + 1);
+  const keyed = sameKey(url.searchParams.get('k'));
+  if (!keyed && !sameKey(cookie)) {
+    res.writeHead(403, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-store' });
+    return res.end('<!doctype html><meta charset="utf-8"><title>Floorplan</title><body style="font:16px/1.5 system-ui;max-width:34rem;margin:15vh auto;padding:0 1rem"><h1 style="font-size:1.2rem">This map opens from its own link</h1><p>In the project folder, run <code>node floorplan/serve.mjs</code>. It opens the map in your browser. To open it yourself, use the whole address it prints after <code>open:</code>, including the part after <code>?k=</code>.</p></body>');
+  }
+  const remember = keyed ? { 'Set-Cookie': `${cookieName}=${pageKey}; Path=/; HttpOnly; SameSite=Lax` } : {};
+  if (url.pathname === '/' || url.pathname === '/index.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-store', ...remember }); return res.end(page); }
   let file;
   try { file = path.join(here, decodeURIComponent(url.pathname)); } catch { res.writeHead(400); return res.end('bad address'); }
   // inside this folder only: a neighbour like ../floorplan-old/ also starts with this folder's path
@@ -637,7 +679,7 @@ const server = http.createServer((req, res) => {
   // Any spelling of it: on macOS and Windows .CACHE is the same folder.
   const inCache = path.relative(here, file).split(path.sep).some((part) => part.toLowerCase() === '.cache');
   if (!file.startsWith(here + path.sep) || inCache || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end('not found'); }
-  res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
+  res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', ...remember });
   fs.createReadStream(file).pipe(res);
 });
 // another map (or anything else) on the port: take the next free one
@@ -650,19 +692,18 @@ server.on('error', (e) => {
 server.listen(port, '127.0.0.1');
 server.on('listening', () => {
   const u = `http://127.0.0.1:${port}`;
-  try {
-    fs.mkdirSync(path.dirname(stateFile), { recursive: true });
-    fs.writeFileSync(stateFile, JSON.stringify({ pid: process.pid, port, url: u, token, hash: selfHash, startedAt: new Date().toISOString() }, null, 2));
-  } catch {}
+  const link = `${u}/?k=${pageKey}`; // the address that opens the map
+  try { writePrivate(stateFile, JSON.stringify({ pid: process.pid, port, url: u, open: link, token, hash: selfHash, startedAt: new Date().toISOString() }, null, 2)); } catch {}
   const forget = () => { try { if (readState()?.pid === process.pid) fs.unlinkSync(stateFile); } catch {} };
   process.on('exit', forget);
   for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => process.exit(0));
   console.log(`Floorplan: ${u}`);
+  console.log(`open: ${link}`);
   console.log(cli
     ? `asking via ${ENGINES[engine].name} ${version || ''} (${cli.path})${model ? `, model ${model}` : ''}`
     : `${ENGINES[want].name} not found: the map works, but asking questions needs it (${ENGINES[want].site}). Pass --${want} <path> if it is installed somewhere unusual.`);
   if (!has('no-open')) {
-    const opener = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', u]] : process.platform === 'darwin' ? ['open', [u]] : ['xdg-open', [u]];
+    const opener = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', link]] : process.platform === 'darwin' ? ['open', [link]] : ['xdg-open', [link]];
     try { spawn(opener[0], opener[1], { stdio: 'ignore', detached: true }).unref(); } catch {}
   }
 });

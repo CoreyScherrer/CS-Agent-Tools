@@ -2696,7 +2696,10 @@ fontsReady.then(() => render({ after: () => { renderPanel(); emit('ready', {}); 
     hidden: !!b.hidden,
   }));
   // the page around the map: its real origin when the browser says (Chrome, Safari), so the list goes only there and only it is heard
-  const parentOrigin = location.ancestorOrigins?.[0] || '';
+  // A page opened from a file, or a sandboxed one, has no origin to name (the browser says "null"): that can't be
+  // posted to, so it is treated like a browser that doesn't say.
+  const ancestor = location.ancestorOrigins?.[0];
+  const parentOrigin = ancestor && ancestor !== 'null' ? ancestor : '';
   let queued = 0;
   const send = () => { queued = 0; window.parent.postMessage({ type: 'fp-controls', controls: snapshot() }, parentOrigin || '*'); };
   const schedule = () => { if (!queued) queued = setTimeout(send, 30); };

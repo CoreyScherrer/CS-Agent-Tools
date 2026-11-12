@@ -15,7 +15,7 @@ Plugins for Claude Code and Codex can run code on your computer, so it's worth a
 
 ### The network
 
-- **The map's server** (`floorplan/serve.mjs`) listens on `127.0.0.1` only, so other machines can't reach it. It answers only to `127.0.0.1` and `localhost` at its own port, and its API needs a token that only the map page receives.
+- **The map's server** (`floorplan/serve.mjs`) listens on `127.0.0.1` only, so other machines can't reach it. It answers only to `127.0.0.1` and `localhost` at its own port, its API needs a token that only the map page receives, and the page itself opens only from the map's own link (an address with a key, kept where only your account can read it).
 - **One outbound request: the Floorplan Cloud waitlist,** sent only if you type your email into the card on the map and click to join. It goes to `floorplan-waitlist-690500262396.us-central1.run.app` and carries your email and "just me" or "with my team". Details in [Privacy and security](privacy-and-security.md#floorplan-cloud-waitlist).
 - **The map page loads nothing from the internet.** Its layout engine and fonts are built into the file. It only links to documentation, which opens when you click.
 - **Reporting a false alarm is yours to send.** If you tick the box under **Not a problem** in Health, the map opens a new GitHub issue in your browser with the text filled in, shown to you first. Nothing goes anywhere unless you submit it there.
@@ -28,7 +28,7 @@ Asking questions on the map runs Claude Code or Codex, which talk to Anthropic o
 |---|---|---|
 | `git` | scan | Read-only: which files are tracked, the current branch and commit, what changed since the last map |
 | `where` (Windows) or `which` | starting the map's server | Finding the Claude Code or Codex CLI |
-| `claude` or `codex` | when you ask a question on the map | Answering it, read-only: `claude -p` limited to reading files and Floorplan's lookup script, or `codex exec --sandbox read-only` |
+| `claude` or `codex` | when you ask a question on the map | Answering it, read-only: `claude -p` limited to reading files, Floorplan's lookup script and read-only shell commands (in restricted mode, without your settings or MCP servers, when your Claude Code has it), or `codex exec --sandbox read-only` |
 | `node` | throughout | Running Floorplan's own scripts |
 | `cmd /c start`, `open` or `xdg-open` | opening the map | Opening the map's local address in your browser |
 

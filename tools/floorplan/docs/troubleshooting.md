@@ -69,6 +69,9 @@ They were committed before Floorplan started ignoring the folder. Untrack them, 
 git rm -r --cached floorplan
 ```
 
+### "This map opens from its own link"
+The map's server shows the map only to a browser that came through its own address, which ends in `?k=` and a key. Run `node floorplan/serve.mjs` from the project folder and it opens the map, or copy the whole address it prints after `open:`. The same goes for a bookmark of the bare `http://127.0.0.1:4378` in a browser that has not opened the map before.
+
 ### Port 4378 is in use
 Nothing to do. The server moves to the next free port, and the URL it prints, or that Claude gives you, is the right one.
 

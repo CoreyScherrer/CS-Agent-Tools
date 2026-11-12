@@ -159,7 +159,8 @@ as installed and enabled, in a session started after the install.
 - [ ] Report the address the map opened at and the most serious Health finding.
 
 **Done when:** `floorplan/index.html` exists in the project, and the address the
-agent printed (by default `http://127.0.0.1:4378`) shows the map.
+agent printed (by default `http://127.0.0.1:4378`, followed by `?k=` and a key)
+shows the map. The address without the key shows a note, not the map.
 
 **Gotchas in this phase**
 

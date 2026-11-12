@@ -107,7 +107,7 @@ Updating a blueprint redraws it from `plan.json`. Once the code exists, `refresh
 
 The map's server answers each question with the AI on your computer, in your project:
 
-- **Claude Code:** it runs `claude -p` with read-only tools only: reading and searching files, and `floorplan/query.mjs`, which looks things up in the map.
+- **Claude Code:** it runs `claude -p` with read-only tools only: reading and searching files, and `floorplan/query.mjs`, which looks things up in the map. When the installed Claude Code has restricted mode, the run uses it: your own settings and MCP servers are left out, and files outside the project can't be read.
 - **Codex:** it runs `codex exec` in Codex's read-only sandbox, with the same lookups. These runs aren't saved to your Codex history, so a follow-up brings the last few questions and answers along.
 
 It uses whichever made the map, and the other one if that isn't installed. Either way it answers with text plus the cards to show, so answers can cite real code.

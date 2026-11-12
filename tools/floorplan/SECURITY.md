@@ -7,7 +7,8 @@
 > the map against a repository, or a description written about one, that tries to break, leak from or stall the map.
 > This bundle fixes the one case of that found in its own audit (a file name that ran as script in the map; see the
 > changelog), but the rest of 0.7.1's hardening, including the page's content security policy, is not here yet. The
-> map's server is also for one person on one computer: any program running as you can read its token. Until the
+> map's server is also for one person on one computer: any program running as you can read its token and page key
+> (other accounts on the computer cannot, except on Windows, where the files' permissions are not set). Until the
 > bundle catches up, map only code you trust.
 
 ## Reporting a vulnerability

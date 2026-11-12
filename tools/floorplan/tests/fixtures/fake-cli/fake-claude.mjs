@@ -4,6 +4,8 @@ import fs from 'node:fs';
 
 const args = process.argv.slice(2);
 if (args[0] === '--version') { console.log('2.0.0 (Claude Code, test)'); process.exit(0); }
+// $FAKE_RESTRICTED: a newer Claude Code, whose help lists restricted mode
+if (args[0] === '--help') { console.log(process.env.FAKE_RESTRICTED ? '  --restricted  Restricted mode\n  --strict-mcp-config  Only use MCP servers from --mcp-config' : '  -p, --print'); process.exit(0); }
 let input = '';
 process.stdin.on('data', (d) => { input += d; });
 process.stdin.on('end', () => {

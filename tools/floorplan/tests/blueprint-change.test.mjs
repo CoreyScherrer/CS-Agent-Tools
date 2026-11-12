@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { REPO, makeProject, shopApp, run, readGraph, readJson, writeJson, routeKeys, cleanup } from './helpers.mjs';
+import { REPO, makeProject, shopApp, run, readGraph, readJson, writeJson, routeKeys, cleanup, mapLink } from './helpers.mjs';
 
 const FIXTURE = path.join(REPO, 'tests', 'fixtures', 'blueprint');
 const FAKE = path.join(REPO, 'tests', 'fixtures', 'fake-cli', 'fake-claude.mjs');
@@ -39,7 +39,7 @@ async function served(replies, root) {
     server.stdout.on('data', (d) => { out += d; const m = /Floorplan: (http:\/\/\S+)/.exec(out); if (m) { clearTimeout(timer); resolve(m[1]); } });
     server.on('exit', (code) => reject(new Error(`server exited (${code}): ${out}`)));
   });
-  const page = JSON.parse(/window\.FLOORPLAN_SERVER=(\{.*?\});/.exec(await (await fetch(base + '/')).text())[1]);
+  const page = JSON.parse(/window\.FLOORPLAN_SERVER=(\{.*?\});/.exec(await (await fetch(mapLink(root))).text())[1]);
   const token = page.token;
   // the stand-in is Claude Code, which holds its answers to a schema, so the map offers Change
   assert.equal(page.change, true);
