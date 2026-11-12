@@ -110,7 +110,14 @@ export function keepOutOfGit(dir) {
   const gi = path.join(dir, '.gitignore');
   const want = '# Floorplan keeps its map out of git: this ignores everything in this folder, this file included.\n*\n';
   fs.mkdirSync(dir, { recursive: true });
-  try { if (!fs.existsSync(gi) || fs.readFileSync(gi, 'utf8') !== want) fs.writeFileSync(gi, want); } catch {}
+  // a .gitignore someone else wrote (the folder was given with --out and already had one) is theirs: leave it
+  let theirs = false;
+  try {
+    const have = fs.existsSync(gi) ? fs.readFileSync(gi, 'utf8') : null;
+    if (have !== null && have !== want && !have.startsWith('# Floorplan')) theirs = true;
+    else if (have !== want) fs.writeFileSync(gi, want);
+  } catch {}
+  if (theirs) return `${path.basename(dir)}/ has its own .gitignore, which was left as it is, so the map in it is not kept out of git. Add the map's files to that .gitignore yourself.`;
   const tracked = (git(dir, ['ls-files', '--', '.']) || '').split('\n').filter(Boolean);
   if (!tracked.length) return null;
   const rel = path.basename(dir);

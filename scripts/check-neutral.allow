@@ -1,7 +1,8 @@
 # Reviewed exceptions for scripts/check-neutral.sh. One "path:match" per line;
 # "path:*" accepts every hit in one file. Add a line only after checking that the
-# match is a public vendor domain, a test fixture or a code expression, and not
-# anyone's real infrastructure.
+# match is a public vendor domain, a test fixture or a code expression. The only
+# real service and address allowed are a bundled project's own published ones,
+# named below; never the infrastructure of whoever is adding the line.
 #
 # tools/floorplan is bundled third-party code (Hayden Smith's Floorplan, MIT).
 # Its hits are: public vendor and standards domains in docs and source, made-up

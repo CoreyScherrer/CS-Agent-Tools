@@ -3,6 +3,10 @@
 ## Unreleased
 
 - **Safer maps of code you didn't write** (CS-Agent-Tools bundle): a file name, or any other text the scan reads, can no longer run as script in the map. A name holding the build's own placeholder followed by markup used to land outside the data script. The data is now written with `<`, `>` and `&` escaped, in the built map, in exported copies and in what the server adds, and it is filled in last. A test builds a project with such names on every change.
+- **A committed `.env` is reported as committed:** in a project that is a single repository, Health looked the file up in git under a path with its first two letters cut off, so a tracked `.env` with live keys was reported only as "not hidden from git", without the steps to untrack it and rotate the keys.
+- **A sign-in check in front of an inline `require()` is seen:** `app.use('/admin', requireStaff, require('./routes/admin'))` no longer reports the admin endpoints as open to anyone.
+- **Your own `.gitignore` is left alone:** building into a folder that already has a `.gitignore` no longer replaces it with one that ignores everything.
+- **The map's server keeps running on an odd request, and never serves its cache folder,** which holds its token.
 - **Follow-up questions resume only a session Claude Code gave this map's server.** Any other value sent as a session is dropped instead of being passed to the CLI, where it could be read as an option.
 
 - **Tighter map:** boxes sit about half as far apart, across and down (130px to 70px between columns, 32px to 18px between boxes in a column), and a line running past a box now keeps 18px from its top or bottom instead of 10px. The memory-archive map fits the screen at 47% instead of 42%.

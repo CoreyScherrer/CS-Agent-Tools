@@ -164,8 +164,9 @@ agent printed (by default `http://127.0.0.1:4378`) shows the map.
 **Gotchas in this phase**
 
 - "`floorplan/` already exists here and isn't a map." The project has its own
-  folder with that name. Ask the agent to build the map elsewhere; the scripts
-  take `--out <folder>`.
+  folder with that name. Rename that folder first. The error suggests
+  `--out <folder>`, but in this version only part of the tool follows it and the
+  map does not work from another folder.
 - The address is not port 4378. The port was busy and the server took the next
   free one. Use the address the agent printed.
 
@@ -271,7 +272,7 @@ network, or the embedded map draws inside your page with one top bar, not two.
 |---|---|---|
 | The skill does not appear after installing | Plugins load at session start | Start a new session; confirm with `claude plugin list` |
 | Two plugins named `floorplan`, unclear which viewer you have | The original and this bundle share a name | Uninstall one before installing the other |
-| "`floorplan/` already exists here and isn't a map" | The project has its own folder of that name | Build elsewhere with `--out <folder>` |
+| "`floorplan/` already exists here and isn't a map" | The project has its own folder of that name | Rename your folder; `--out <folder>` does not work end to end in this version |
 | The map is not at port 4378 | The port was in use | Use the address the agent printed |
 | The Ask bar says it needs the Claude Code CLI | The map was opened from its file, or the CLI is not installed | Install the CLI and run `node floorplan/serve.mjs` |
 | The CLI is installed but not found | It is not on `PATH` | `node floorplan/serve.mjs --claude /path/to/claude` |
