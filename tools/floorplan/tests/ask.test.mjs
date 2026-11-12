@@ -119,6 +119,10 @@ test('the Claude Code CLI comes first for a map Claude built, with read-only too
   assert.deepEqual(first.args.slice(first.args.indexOf('--allowedTools') + 1), ['Bash(node floorplan/query.mjs:*)', 'Read', 'Grep', 'Glob']);
   assert.equal(first.input, 'How do refunds work?');
   assert.equal(second.args[second.args.indexOf('--resume') + 1], 'test-session');
+  // a session id this server never handed out is dropped, so it can't be read as another option
+  await ask(s, 'And now?', '--dangerously-skip-permissions');
+  const third = s.calls()[2];
+  assert.ok(!third.args.includes('--resume') && !third.args.includes('--dangerously-skip-permissions'));
 });
 
 test('--engine picks one CLI and never falls back to the other', async () => {

@@ -51,6 +51,8 @@ const cleanDismissal = (d) => ({
 const EXPORT_PARTS = ['flows', 'notes', 'recent', 'health'];
 const EXPORT_DEFAULT = ['flows', 'notes'];
 const DATA_START = '<script>window.FLOORPLAN = ';
+// Data inside a <script> stays data: <, > and & as \u escapes, so nothing in it can close the script (as in build.mjs).
+const scriptJson = (v) => JSON.stringify(v).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 function exportMap(include, extraFlows = []) {
   const html = fs.readFileSync(path.join(here, 'index.html'), 'utf8');
   const a = html.indexOf(DATA_START), b = html.indexOf(';</script>', a);
@@ -69,7 +71,7 @@ function exportMap(include, extraFlows = []) {
   if (!on.includes('health')) delete out.health;
   // dismissals made since the last build travel with the copy (the page applies them; no reasons, which are notes to self)
   else if (out.health) { const list = readDismissed().map(({ reason, ...d }) => d); if (list.length) out.health = { ...out.health, dismissed: list }; else delete out.health.dismissed; }
-  const json = JSON.stringify(out).replace(/<\/(script)/gi, '<\\/$1').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  const json = scriptJson(out);
   const slug = String(g.project?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'floorplan';
   return { html: html.slice(0, a + DATA_START.length) + json + html.slice(b), name: `${slug}-map.html`, include: on, plan: !!g.meta?.blueprint };
 }
@@ -180,7 +182,7 @@ if (cli) { try { version = execFileSync(cli.cmd, [...cli.args, '--version'], { e
 
 // The page, the graph, and the instructions and answer schema (from query.mjs's inlined graph-query
 // code). Loaded at start and again whenever the map is rebuilt.
-const inject = `<script>window.FLOORPLAN_SERVER=${JSON.stringify({ token, cli: !!cli, engine, want, version, model: model || null, change: canChange })};</script>`;
+const inject = `<script>window.FLOORPLAN_SERVER=${scriptJson({ token, cli: !!cli, engine, want, version, model: model || null, change: canChange })};</script>`;
 let page, G, core, MODES;
 function load() {
   const html = fs.readFileSync(path.join(here, 'index.html'), 'utf8');
@@ -318,11 +320,13 @@ function parseAnswer(ev) {
 const failCode = (msg) => /not logged in|logged out|\/login|log ?in again|sign in|authenticat|unauthori[sz]ed|\b401\b/i.test(msg) ? 'not_logged_in'
   : /usage limit|rate limit|too many requests|\b429\b/i.test(msg) ? 'rate_limited' : 'cli_error';
 // Claude Code: `claude -p` with read-only tools, answering in the schema; follow-ups resume its session
+const claudeSessions = new Set(); // the session ids Claude Code has handed back since this server started
 function claudeRun(body, mode) {
   const args = [...cli.args, '-p', '--output-format', 'stream-json', '--verbose',
     '--json-schema', JSON.stringify(mode.schema), '--append-system-prompt', mode.instructions,
     '--tools', 'Read,Grep,Glob,Bash', '--allowedTools', 'Bash(node floorplan/query.mjs:*)', 'Read', 'Grep', 'Glob'];
-  if (body.session) args.push('--resume', String(body.session));
+  // only a session id Claude Code itself gave this server: anything else could be read as another option
+  if (claudeSessions.has(body.session)) args.push('--resume', body.session);
   if (model) args.push('--model', model);
   return {
     args, input: String(body.question || '').slice(0, 4000),
@@ -330,7 +334,7 @@ function claudeRun(body, mode) {
       if (ev.type === 'assistant') for (const c of ev.message?.content || []) if (c.type === 'tool_use') out.progress(describeTool(c.name, c.input));
       if (ev.type !== 'result') return;
       if (ev.is_error) out.fail(String(ev.result || ev.subtype || 'Claude Code reported an error'));
-      else out.answer({ ...parseAnswer(ev), session: ev.session_id });
+      else { if (typeof ev.session_id === 'string' && ev.session_id) claudeSessions.add(ev.session_id); out.answer({ ...parseAnswer(ev), session: ev.session_id }); }
     },
   };
 }

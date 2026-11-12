@@ -7,8 +7,11 @@
 # Its hits are: public vendor and standards domains in docs and source, made-up
 # domains in test fixtures, JavaScript property reads such as "s.app" that look
 # like hostnames, the original author's waitlist service and contact address in
-# his own privacy page, and the bundled elkjs layout engine.
-tools/floorplan/skills/floorplan/assets/vendor/elk.bundled.js:*
+# his own privacy page, and licence addresses in the bundled elkjs layout engine.
+tools/floorplan/skills/floorplan/assets/vendor/elk.bundled.js:apache.org
+tools/floorplan/skills/floorplan/assets/vendor/elk.bundled.js:eclipse.org
+tools/floorplan/skills/floorplan/assets/vendor/elk.bundled.js:java.io
+tools/floorplan/skills/floorplan/assets/vendor/elk.bundled.js:w3.org
 tools/floorplan/README.md:nodejs.org
 tools/floorplan/README.md:shields.io
 tools/floorplan/docs/codex.md:nodejs.org

@@ -227,7 +227,10 @@ a "Not a problem" reason.
   `node floorplan/serve.mjs`).
 - [ ] Embed: load the exported file in a frame with `?embed=1` on its address.
   The map then hides its own search box and buttons and hands them to your page.
-  Put it behind whatever sign-in protects the page around it.
+  Put it behind whatever sign-in protects the page around it, and serve it with
+  a `Content-Security-Policy: frame-ancestors` header naming only that page's
+  origin, so no other site can frame it. Embed the exported file, not the live
+  `serve.mjs` address.
 
 **Done when:** the exported file opens from a different computer with no
 network, or the embedded map draws inside your page with one top bar, not two.

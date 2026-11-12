@@ -5,7 +5,10 @@
 >
 > **Known gap:** the original project has released 0.6.2 to 0.7.3 since this bundle was cut. Version 0.7.1 hardened
 > the map against a repository, or a description written about one, that tries to break, leak from or stall the map.
-> Those changes are not in this bundle yet. Until they are, map only code you trust.
+> This bundle fixes the one case of that found in its own audit (a file name that ran as script in the map; see the
+> changelog), but the rest of 0.7.1's hardening, including the page's content security policy, is not here yet. The
+> map's server is also for one person on one computer: any program running as you can read its token. Until the
+> bundle catches up, map only code you trust.
 
 ## Reporting a vulnerability
 

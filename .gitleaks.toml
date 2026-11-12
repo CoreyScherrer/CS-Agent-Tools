@@ -5,3 +5,5 @@ useDefault = true
 [allowlist]
 description = "Floorplan's Health check has a test that builds a made-up private key ('MIIE' + 'abcd' repeated) to prove the check reports it. It is a fixture, not a key."
 paths = ['''^tools/floorplan/tests/false-positives\.test\.mjs$''']
+regexes = ['''BEGIN RSA PRIVATE KEY-----\\n\$\{body\}''']
+condition = "AND"
