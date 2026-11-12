@@ -108,6 +108,24 @@ test('API calls with the token from the map itself work', async () => {
   assert.deepEqual(await r.json(), { flows: [] });
 });
 
+test('a requested flow is stored checked and trimmed, and a broken one is not stored', async () => {
+  const post = async (flow) => (await (await api('/api/flows', { method: 'POST', headers: { 'x-floorplan-token': token, 'content-type': 'application/json' }, body: JSON.stringify({ flow }) })).json()).flows;
+  const file = path.join(root, 'floorplan', 'custom-flows.json');
+  assert.deepEqual(await post({ id: 'bad', steps: [null] }), [], 'a step that is not a step');
+  assert.deepEqual(await post({ id: 'short', steps: [{ ref: 'f:a.js' }] }), [], 'fewer than two steps');
+  const [kept] = await post({ id: 'ok', title: 7, extra: { big: 'x'.repeat(100) }, steps: [{ ref: 'f:a.js', note: 'one', more: 1 }, null, { ref: 'f:b.js' }] });
+  assert.deepEqual(Object.keys(kept).sort(), ['createdAt', 'custom', 'description', 'id', 'steps', 'title']);
+  assert.equal(kept.title, '7');
+  assert.deepEqual(kept.steps, [{ ref: 'f:a.js', note: 'one' }, { ref: 'f:b.js', note: '' }]);
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).flows, [kept]);
+  // a file edited by hand into something else: the server answers with no flows and keeps running
+  for (const broken of ['{"flows":"all of them"}', '{"flows":[null,3]}', 'not json']) {
+    fs.writeFileSync(file, broken);
+    assert.deepEqual(await post({ id: 'bad', steps: [null] }), [], broken);
+  }
+  fs.rmSync(file);
+});
+
 test('files outside the map folder are never served', async () => {
   // including a neighbouring folder whose name starts with "floorplan"
   fs.mkdirSync(path.join(root, 'floorplan-old'));

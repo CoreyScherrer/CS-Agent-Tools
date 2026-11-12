@@ -25,6 +25,14 @@ process.stdin.on('end', () => {
   }
   out({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'node floorplan/query.mjs overview' } }] } });
   out({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: 'shop-api/routes/orders.js' } }] } });
+  // $FAKE_SPLIT: the answer has a dash, and the two writes cut that character in half, as a pipe can
+  if (process.env.FAKE_SPLIT) {
+    const line = Buffer.from(JSON.stringify({ type: 'result', subtype: 'success', is_error: false, session_id: 'test-session', structured_output: { title: 'Refunds', answer: 'Refunds \u2014 \u201cmoney back\u201d.', items: [] } }) + '\n');
+    const cut = line.indexOf(Buffer.from('\u2014')) + 1;
+    process.stdout.write(line.subarray(0, cut));
+    setTimeout(() => process.stdout.write(line.subarray(cut)), 200);
+    return;
+  }
   out({ type: 'result', subtype: 'success', is_error: false, session_id: 'test-session', structured_output: {
     title: 'Refunds', answer: 'Refunds go through [[f:shop-api/routes/orders.js]].',
     items: [{ id: 'f:shop-api/routes/orders.js', note: 'Holds the refund endpoint.' }],

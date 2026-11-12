@@ -40,3 +40,34 @@ test('the map server escapes its data the same way, and resumes only a real sess
   assert.match(serve, /if \(claudeSessions\.has\(body\.session\)\) args\.push\('--resume', body\.session\);/);
   assert.doesNotMatch(serve, /args\.push\('--resume', String\(/);
 });
+
+test('a project named after the data placeholder still gets its data in the data script', () => {
+  const name = '/*__FLOORPLAN_DATA__*/null';
+  const root = makeProject({ 'app/a.js': 'export const a = 1;\n' }, { arch: { ...arch, project: { ...arch.project, name } } });
+  try {
+    run('scan.mjs', root);
+    run('build.mjs', root, '--no-claude-md', '--artifact');
+    for (const file of ['index.html', 'artifact.html']) {
+      const html = fs.readFileSync(path.join(root, 'floorplan', file), 'utf8');
+      const a = html.indexOf('<script>window.FLOORPLAN = '), b = html.indexOf(';</script>', a);
+      assert.equal(JSON.parse(html.slice(a + '<script>window.FLOORPLAN = '.length, b)).project.name, name, file);
+      assert.match(html, /<title>\/\*__FLOORPLAN_DATA__\*\/null map<\/title>/, `${file}: the title is the name, not the data`);
+    }
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('a custom-flows.json that is not a list of flows is left out, and the build still finishes', () => {
+  const root = makeProject({ 'app/a.js': 'export const a = 1;\n', 'app/b.js': 'export const b = 1;\n' }, { arch });
+  try {
+    run('scan.mjs', root);
+    run('build.mjs', root, '--no-claude-md');
+    const file = path.join(root, 'floorplan', 'custom-flows.json');
+    const good = { id: 'mine', title: 'Mine', steps: [{ ref: 'f:app/a.js', note: 'first' }, { ref: 'f:app/b.js' }] };
+    for (const flows of [[{ id: 'x', steps: [null] }, null, 3, { id: 'y', steps: 'all' }, good], 'all of them', { a: 1 }]) {
+      fs.writeFileSync(file, JSON.stringify({ flows }));
+      run('build.mjs', root, '--no-claude-md');
+      const custom = JSON.parse(fs.readFileSync(path.join(root, 'floorplan', 'graph.json'), 'utf8')).flows.filter((f) => f.custom);
+      assert.deepEqual(custom.map((f) => f.id), Array.isArray(flows) ? ['mine'] : []);
+    }
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});

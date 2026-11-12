@@ -165,3 +165,9 @@ test('on Windows, a Claude Code npm install with only bin/claude.exe is found an
   assert.equal(s.page.engine, 'claude');
   assert.equal(s.page.version, process.version);
 });
+
+test('a character that arrives in two pieces from the CLI is shown whole', async () => {
+  const s = await serve({ FLOORPLAN_CLAUDE: path.join(FAKE, 'fake-claude.mjs'), FLOORPLAN_CODEX: path.join(root, 'no-such-cli'), FAKE_SPLIT: '1' });
+  const [answer] = pick(await ask(s, 'How do refunds work?'), 'answer');
+  assert.equal(answer.answer, 'Refunds \u2014 \u201cmoney back\u201d.');
+});
