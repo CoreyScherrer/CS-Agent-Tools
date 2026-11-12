@@ -662,8 +662,10 @@ export function buildHealth({ graph, scan, arch, root }) {
       if (known || (SECRET_NAME.test(n) && !PUBLIC_NAME.test(n) && valueLooksReal(m[2], n)) || (/url|uri|dsn/i.test(n) && /:\/\/[^:\s\/]+:[^@\s]+@/.test(m[2]))) secretVars.push({ name: m[1], line: i + 1 });
     });
     if (!secretVars.length) continue;
-    const repoAbs = f.repo ? path.join(root, f.repo) : root;
-    const relInRepo = f.repo ? f.path.slice(f.repo.length + 1) : f.path;
+    // a project that is one repo records it as ".": the path is already relative to it, with nothing to cut off
+    const sub = f.repo && f.repo !== '.' ? f.repo : '';
+    const repoAbs = sub ? path.join(root, sub) : root;
+    const relInRepo = sub ? f.path.slice(sub.length + 1) : f.path;
     const tracked = !!git(repoAbs, ['ls-files', '--', relInRepo]);
     const it = itemFor(f.path);
     issues.push({

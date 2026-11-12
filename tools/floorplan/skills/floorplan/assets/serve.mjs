@@ -51,6 +51,8 @@ const cleanDismissal = (d) => ({
 const EXPORT_PARTS = ['flows', 'notes', 'recent', 'health'];
 const EXPORT_DEFAULT = ['flows', 'notes'];
 const DATA_START = '<script>window.FLOORPLAN = ';
+// A request's JSON body, or {} when it isn't a JSON object (null, a list, a number or not JSON at all).
+const parseBody = (raw) => { try { const b = JSON.parse(raw); return b && typeof b === 'object' && !Array.isArray(b) ? b : {}; } catch { return {}; } };
 // Data inside a <script> stays data: <, > and & as \u escapes, so nothing in it can close the script (as in build.mjs).
 const scriptJson = (v) => JSON.stringify(v).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 function exportMap(include, extraFlows = []) {
@@ -552,7 +554,7 @@ const server = http.createServer((req, res) => {
         let raw = '';
         req.on('data', (d) => { raw += d; if (raw.length > 50000) req.destroy(); });
         req.on('end', () => {
-          let body = {}; try { body = JSON.parse(raw); } catch {}
+          const body = parseBody(raw);
           let flows = readFlows().filter((x) => x.id !== body.id && x.id !== body.flow?.id);
           if (req.method === 'POST' && body.flow?.id && Array.isArray(body.flow.steps)) flows.push({ ...body.flow, createdAt: new Date().toISOString() });
           fs.writeFileSync(flowsFile, JSON.stringify({ flows }, null, 2) + '\n');
@@ -567,7 +569,7 @@ const server = http.createServer((req, res) => {
         let raw = '';
         req.on('data', (d) => { raw += d; if (raw.length > 100000) req.destroy(); });
         req.on('end', () => {
-          let body = {}; try { body = JSON.parse(raw); } catch {}
+          const body = parseBody(raw);
           if (typeof body.id !== 'string') { res.writeHead(400); return res.end(); }
           const dismissed = readDismissed().filter((x) => x.id !== body.id);
           if (req.method === 'POST') dismissed.push(cleanDismissal(body));
@@ -584,7 +586,7 @@ const server = http.createServer((req, res) => {
         let raw = '';
         req.on('data', (d) => { raw += d; if (raw.length > 2000) req.destroy(); });
         req.on('end', async () => {
-          let body = {}; try { body = JSON.parse(raw); } catch {}
+          const body = parseBody(raw);
           // read only when the person clicks "Use my Claude email"
           if (url.pathname === '/api/cloud/claude-email') return json({ email: claudeEmail() });
           if (url.pathname === '/api/cloud/join') return json(await joinWaitlist(body));
@@ -606,7 +608,7 @@ const server = http.createServer((req, res) => {
       let raw = '';
       req.on('data', (d) => { raw += d; if (raw.length > 500000) req.destroy(); });
       req.on('end', () => {
-        let body = {}; try { body = JSON.parse(raw); } catch {}
+        const body = parseBody(raw);
         try {
           const x = exportMap(Array.isArray(body.include) ? body.include.map(String) : EXPORT_DEFAULT, cleanFlows(body.flows));
           res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Content-Disposition': `attachment; filename="${x.name}"`, 'Cache-Control': 'no-store' });
@@ -622,7 +624,7 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/ask') {
       let raw = '';
       req.on('data', (d) => { raw += d; if (raw.length > 20000) req.destroy(); });
-      req.on('end', () => { let body = {}; try { body = JSON.parse(raw); } catch {} ask(req, res, body); });
+      req.on('end', () => { const body = parseBody(raw); ask(req, res, body); });
       return;
     }
     res.writeHead(404); return res.end();
@@ -631,7 +633,8 @@ const server = http.createServer((req, res) => {
   let file;
   try { file = path.join(here, decodeURIComponent(url.pathname)); } catch { res.writeHead(400); return res.end('bad address'); }
   // inside this folder only: a neighbour like ../floorplan-old/ also starts with this folder's path
-  if (!file.startsWith(here + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end('not found'); }
+  // and never the cache folder: it holds this server's token and the map's working files, which the page doesn't load
+  if (!file.startsWith(here + path.sep) || file.startsWith(path.join(here, '.cache') + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end('not found'); }
   res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
   fs.createReadStream(file).pipe(res);
 });

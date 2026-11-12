@@ -60,7 +60,7 @@ Floorplan finds most web requests and imports by reading the code, but not all o
 Ask Claude to move it, or edit the `paths` patterns in `floorplan/architecture.json` and ask for an update.
 
 ### "floorplan/ already exists here and isn't a map"
-Your project has its own folder called `floorplan`, which Floorplan won't write into. Rename your folder, or ask Claude to build the map somewhere else; the scan and build scripts accept `--out <folder>`.
+Your project has its own folder called `floorplan`, which Floorplan won't write into. Rename your folder, then ask for the floorplan again. (The scripts have an `--out <folder>` option, but in this version only part of the tool follows it, so the map doesn't work from another folder.)
 
 ### `git status` shows files under `floorplan/`
 They were committed before Floorplan started ignoring the folder. Untrack them, keeping the files on disk:
