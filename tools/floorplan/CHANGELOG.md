@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Safer maps of code you didn't write** (CS-Agent-Tools bundle): a file name, or any other text the scan reads, can no longer run as script in the map. A name holding the build's own placeholder followed by markup used to land outside the data script. The data is now written with `<`, `>` and `&` escaped, in the built map, in exported copies and in what the server adds, and it is filled in last. A test builds a project with such names on every change.
+- **Follow-up questions resume only a session Claude Code gave this map's server.** Any other value sent as a session is dropped instead of being passed to the CLI, where it could be read as an option.
+
 - **Tighter map:** boxes sit about half as far apart, across and down (130px to 70px between columns, 32px to 18px between boxes in a column), and a line running past a box now keeps 18px from its top or bottom instead of 10px. The memory-archive map fits the screen at 47% instead of 42%.
 - **Outside services in columns:** a map with more than seven outside services no longer stacks them in one column several screens tall. They share out across up to three columns on the right, each near the parts that use it. The memory-archive map now fits the screen at 42% instead of 20%.
 - **Zoomed-out names stay inside their boxes:** below 42% a box's name no longer spills past its edges or moves above or below it. It shrinks from 12px to 9px and wraps up to three lines to fit, ends in "…" if it still doesn't, and a box too small for one line shows no name.
