@@ -31,8 +31,8 @@ after(async () => {
   cleanup(root);
 });
 
-/** The cookie a browser holds once it has opened the map through its own link. */
-const opened = () => ({ cookie: `fp_${new URL(base).port}=${new URL(mapLink(root)).searchParams.get('k')}` });
+/** The map's page key, as its own link carries it. */
+const k = () => '?k=' + new URL(mapLink(root)).searchParams.get('k');
 const api = (p, { headers = {}, ...opts } = {}) => fetch(base + p, { ...opts, headers: { 'content-type': 'application/json', ...headers } });
 
 test('it listens on 127.0.0.1 only', () => {
@@ -57,7 +57,7 @@ test('API calls with the token from another website are refused', async () => {
 /** A request to the server under another host name, as a site that rebinds its domain to 127.0.0.1 would send. */
 const asHost = (host, p) => new Promise((resolve, reject) => {
   const u = new URL(base + p);
-  http.get({ hostname: u.hostname, port: u.port, path: u.pathname, headers: { host, 'x-floorplan-token': token, ...opened() } }, (r) => { r.resume(); resolve(r.statusCode); }).on('error', reject);
+  http.get({ hostname: u.hostname, port: u.port, path: u.pathname + u.search, headers: { host, 'x-floorplan-token': token } }, (r) => { r.resume(); resolve(r.statusCode); }).on('error', reject);
 });
 
 test('requests under any other host name are refused, page included (DNS rebinding)', async () => {
@@ -65,31 +65,34 @@ test('requests under any other host name are refused, page included (DNS rebindi
   assert.equal(await asHost(`evil.example:${port}`, '/'), 403);
   assert.equal(await asHost(`evil.example:${port}`, '/api/flows'), 403);
   assert.equal(await asHost('127.0.0.1:1', '/'), 403);
-  assert.equal(await asHost(`localhost:${port}`, '/'), 200);
+  assert.equal(await asHost(`localhost:${port}`, '/' + k()), 200);
   assert.equal(await asHost(`127.0.0.1:${port}`, '/api/flows'), 200);
 });
 
-test('the map and its files go only to a browser that came through the map\'s own link', async () => {
+test('the map and its files are given only at the map\'s own link, and no cookie carries its key', async () => {
   const link = mapLink(root);
   const key = new URL(link).searchParams.get('k');
   assert.match(key, /^[0-9a-f]{32}$/);
   // the bare address, as any other account on this computer could ask for it: no page, so no token
-  for (const p of ['/', '/index.html', '/graph.json', '/serve.mjs', '/?k=wrong', '/?k=']) {
+  for (const p of ['/', '/index.html', '/graph.json', '/serve.mjs', '/?k=wrong', '/?k=', '/?k=' + key.slice(0, -1)]) {
     const r = await fetch(base + p);
     assert.equal(r.status, 403, p);
     assert.doesNotMatch(await r.text(), /"token"/, p);
   }
-  // the link sets a cookie for this port, and the cookie alone is enough afterwards (a reload, the map's files)
   const first = await fetch(link);
   assert.equal(first.status, 200);
-  const cookie = first.headers.get('set-cookie');
-  assert.match(cookie, new RegExp(`^fp_${new URL(base).port}=${key}; Path=/; HttpOnly; SameSite=Lax$`));
-  const pair = cookie.split(';')[0];
-  assert.equal((await fetch(base + '/', { headers: { cookie: pair } })).status, 200);
-  assert.equal((await fetch(base + '/graph.json', { headers: { cookie: pair } })).status, 200);
-  assert.equal((await fetch(base + '/', { headers: { cookie: pair.replace(/.$/, 'x') } })).status, 403);
+  assert.equal((await fetch(base + '/graph.json' + k())).status, 200);
+  // a cookie for 127.0.0.1 goes to every port on it, so to any other server on this computer: the key is never
+  // put in one, and one that holds it opens nothing
+  assert.equal(first.headers.get('set-cookie'), null);
+  assert.equal((await fetch(base + '/', { headers: { cookie: `fp_${new URL(base).port}=${key}; k=${key}` } })).status, 403);
+  assert.doesNotMatch(fs.readFileSync(path.join(root, 'floorplan', 'serve.mjs'), 'utf8'), /Set-Cookie|headers\.cookie/);
+  // links out of the map don't carry its address
+  assert.equal(first.headers.get('referrer-policy'), 'no-referrer');
   // the cache folder stays unserved even with the key
-  assert.equal((await fetch(base + '/.cache/key', { headers: { cookie: pair } })).status, 404);
+  assert.equal((await fetch(base + '/.cache/key' + k())).status, 404);
+  // an open tab looks for the map at its own address after a restart, key included
+  assert.match(fs.readFileSync(path.join(root, 'floorplan', 'index.html'), 'utf8'), /const check = \(\) => fetch\('\/' \+ location\.search, \{ cache: 'no-store' \}\)/);
 });
 
 test('the server\'s token and page key are readable by this account only', { skip: process.platform === 'win32' }, () => {
@@ -110,7 +113,7 @@ test('files outside the map folder are never served', async () => {
   fs.mkdirSync(path.join(root, 'floorplan-old'));
   fs.writeFileSync(path.join(root, 'floorplan-old', 'notes.txt'), 'private notes');
   for (const p of ['/../shop-api/config.js', '/%2e%2e/shop-api/config.js', '/..%2fshop-api%2fconfig.js', '/..%2ffloorplan-old%2fnotes.txt']) {
-    const r = await fetch(base + p, { headers: opened() });
+    const r = await fetch(base + p + k());
     const body = await r.text();
     assert.equal(r.status, 404, p);
     assert.ok(!body.includes('DB_PASSWORD') && !body.includes('private notes'), `${p} -> ${r.status}`);
@@ -118,6 +121,6 @@ test('files outside the map folder are never served', async () => {
 });
 
 test('a malformed address gets an error, and the server keeps running', async () => {
-  assert.equal((await fetch(base + '/%E0%A4%A', { headers: opened() })).status, 400);
+  assert.equal((await fetch(base + '/%E0%A4%A' + k())).status, 400);
   assert.equal((await fetch(mapLink(root))).status, 200);
 });

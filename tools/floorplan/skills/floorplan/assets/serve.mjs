@@ -7,8 +7,8 @@
 //        node floorplan/serve.mjs --stop
 //        node floorplan/serve.mjs --export [<file>] [--include flows,notes,recent,health]   (a copy to share; default flows,notes)
 //
-// The server listens on 127.0.0.1 only, and shows the map only to a browser that opened it from this
-// map's own link (the address with ?k=…, which the server opens and open.mjs prints). Each question runs in
+// The server listens on 127.0.0.1 only, and shows the map only at this map's own link (the address
+// with ?k=…, which the server opens and open.mjs prints). Each question runs in
 // the codebase root, on your own account: `claude -p` with Read, Grep, Glob and Bash, where Bash may run
 // floorplan/query.mjs and the read-only commands Claude Code allows by itself, or `codex exec` in its
 // read-only sandbox. With a Claude Code that has restricted mode, your own settings and MCP servers are left
@@ -113,8 +113,10 @@ const cacheDir = path.join(here, '.cache');
 function privateCache() { fs.mkdirSync(cacheDir, { recursive: true, mode: 0o700 }); try { fs.chmodSync(cacheDir, 0o700); } catch {} }
 function writePrivate(file, text) { privateCache(); fs.writeFileSync(file, text, { mode: 0o600 }); try { fs.chmodSync(file, 0o600); } catch {} }
 // The page key: what a browser shows to be given the map (and with it the token). Any account on this
-// computer can reach 127.0.0.1, so the address alone is not enough. Kept between starts, so tabs that are
-// open come back by themselves after a restart; the token above is still new every start.
+// computer can reach 127.0.0.1, so the address alone is not enough. It travels only in the map's own address
+// (?k=…), never in a cookie: a browser sends a cookie for 127.0.0.1 to every port on it, so to any other
+// server on this computer. Kept between starts, so tabs that are open come back by themselves after a
+// restart; the token above is still new every start.
 const pageKey = (() => {
   const file = path.join(cacheDir, 'key');
   try { const k = fs.readFileSync(file, 'utf8').trim(); if (/^[0-9a-f]{32}$/.test(k)) { try { fs.chmodSync(file, 0o600); } catch {} return k; } } catch {}
@@ -213,9 +215,7 @@ if (cli && engine === 'claude') {
 
 // The page, the graph, and the instructions and answer schema (from query.mjs's inlined graph-query
 // code). Loaded at start and again whenever the map is rebuilt.
-// the key is dropped from the address once the page is open (a framed map keeps it: a frame inside another
-// site is sent no cookie, so its address is all it has when it reloads)
-const inject = `<script>window.FLOORPLAN_SERVER=${scriptJson({ token, cli: !!cli, engine, want, version, model: model || null, change: canChange, restricted })};try{if(window.parent===window){const u=new URL(location.href);if(u.searchParams.has('k')){u.searchParams.delete('k');history.replaceState(null,'',u);}}}catch{}</script>`;
+const inject = `<script>window.FLOORPLAN_SERVER=${scriptJson({ token, cli: !!cli, engine, want, version, model: model || null, change: canChange, restricted })};</script>`;
 let page, G, core, MODES;
 function load() {
   const html = fs.readFileSync(path.join(here, 'index.html'), 'utf8');
@@ -660,18 +660,14 @@ const server = http.createServer((req, res) => {
     }
     res.writeHead(404); return res.end();
   }
-  // The map and its files go only to a browser that came through this map's own link: ?k=<page key> on the
-  // address, remembered in a cookie for this port. Without it, any account on this computer could load the
-  // page and read the token in it.
-  const cookieName = `fp_${port}`;
-  const cookie = String(req.headers.cookie || '').split(';').map((c) => c.trim()).find((c) => c.startsWith(cookieName + '='))?.slice(cookieName.length + 1);
-  const keyed = sameKey(url.searchParams.get('k'));
-  if (!keyed && !sameKey(cookie)) {
+  // The map and its files are given only at this map's own link: ?k=<page key> on the address. Without it,
+  // any account on this computer could load the page and read the token in it. No cookie remembers the key
+  // (see pageKey), so the address keeps it and a reload sends it again.
+  if (!sameKey(url.searchParams.get('k'))) {
     res.writeHead(403, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-store' });
     return res.end('<!doctype html><meta charset="utf-8"><title>Floorplan</title><body style="font:16px/1.5 system-ui;max-width:34rem;margin:15vh auto;padding:0 1rem"><h1 style="font-size:1.2rem">This map opens from its own link</h1><p>In the project folder, run <code>node floorplan/serve.mjs</code>. It opens the map in your browser. To open it yourself, use the whole address it prints after <code>open:</code>, including the part after <code>?k=</code>.</p></body>');
   }
-  const remember = keyed ? { 'Set-Cookie': `${cookieName}=${pageKey}; Path=/; HttpOnly; SameSite=Lax` } : {};
-  if (url.pathname === '/' || url.pathname === '/index.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-store', ...remember }); return res.end(page); }
+  if (url.pathname === '/' || url.pathname === '/index.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }); return res.end(page); }
   let file;
   try { file = path.join(here, decodeURIComponent(url.pathname)); } catch { res.writeHead(400); return res.end('bad address'); }
   // inside this folder only: a neighbour like ../floorplan-old/ also starts with this folder's path
@@ -679,7 +675,7 @@ const server = http.createServer((req, res) => {
   // Any spelling of it: on macOS and Windows .CACHE is the same folder.
   const inCache = path.relative(here, file).split(path.sep).some((part) => part.toLowerCase() === '.cache');
   if (!file.startsWith(here + path.sep) || inCache || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end('not found'); }
-  res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', ...remember });
+  res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
   fs.createReadStream(file).pipe(res);
 });
 // another map (or anything else) on the port: take the next free one
