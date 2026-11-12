@@ -1,0 +1,32 @@
+# Runs Floorplan's own test suite (tools/floorplan) on every change that touches it, with every Node
+# version it supports. This is what keeps the promises in tools/floorplan/docs/is-it-safe.md checked:
+# tests/supply-chain.test.mjs fails if a change adds a hook, a dependency, a download or a new program.
+# No dependencies to install: Node's built-in runner.
+name: Floorplan tests
+
+on:
+  push:
+    branches: [main]
+    paths: ['tools/floorplan/**', '.claude-plugin/**', '.github/workflows/floorplan-tests.yml']
+  pull_request:
+    paths: ['tools/floorplan/**', '.claude-plugin/**', '.github/workflows/floorplan-tests.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: node --test
+        working-directory: tools/floorplan

@@ -1,0 +1,20 @@
+{
+  "name": "floorplan",
+  "interface": {
+    "displayName": "Floorplan"
+  },
+  "plugins": [
+    {
+      "name": "floorplan",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
