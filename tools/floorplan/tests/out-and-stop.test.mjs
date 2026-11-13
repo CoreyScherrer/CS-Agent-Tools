@@ -99,3 +99,21 @@ test('a map built with --out somewhere else knows where its code is, and says wh
     assert.ok(!fs.existsSync(path.join(root, 'floorplan', '.cache', 'root.json')));
   } finally { if (server) await stop(server); cleanup(root); cleanup(out); }
 });
+
+test('a map built with --out inside a project is not scanned as that project\'s code', () => {
+  // outside git, where no .gitignore keeps the folder out
+  const root = makeProject({ 'app/a.js': 'export const a = 1;\n', 'app/b.js': 'import { a } from \'./a.js\';\nexport const b = a;\n' },
+    { arch: { project: { name: 'Sample', summary: 'A small sample.' }, nodes: [{ id: 'app', label: 'App', kind: 'service', summary: 'The app.', paths: ['app/**'] }] } });
+  try {
+    scanAndBuild(root);
+    const scanFile = path.join(root, 'floorplan', '.cache', 'scan.json');
+    const before = JSON.parse(fs.readFileSync(scanFile, 'utf8')).files.map((f) => f.path).sort();
+    for (const out of ['alternate-map', path.join('docs', 'maps', 'current')]) {
+      run('build.mjs', root, '--no-claude-md', '--out', path.join(root, out), '--arch', path.join(root, 'floorplan', 'architecture.json'), '--scan', scanFile);
+      assert.ok(fs.existsSync(path.join(root, out, 'serve.mjs')));
+    }
+    run('scan.mjs', root);
+    assert.deepEqual(JSON.parse(fs.readFileSync(scanFile, 'utf8')).files.map((f) => f.path).sort(), before);
+    assert.deepEqual(before, ['app/a.js', 'app/b.js']);
+  } finally { cleanup(root); }
+});
