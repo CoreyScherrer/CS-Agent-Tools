@@ -23,7 +23,15 @@ import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(here, '..');
+// The codebase is the folder above the map, unless the map was built somewhere else (build.mjs --out),
+// in which case the build left a note of where the code is.
+const root = (() => {
+  try {
+    const noted = JSON.parse(fs.readFileSync(path.join(here, '.cache', 'root.json'), 'utf8')).root;
+    if (typeof noted === 'string' && path.isAbsolute(noted) && fs.statSync(noted).isDirectory()) return noted;
+  } catch {}
+  return path.resolve(here, '..');
+})();
 const argv = process.argv.slice(2);
 const opt = (name, dflt) => { const i = argv.indexOf('--' + name); return i < 0 ? dflt : argv[i + 1]; };
 const has = (name) => argv.includes('--' + name);
@@ -32,7 +40,14 @@ const readState = () => { try { return JSON.parse(fs.readFileSync(stateFile, 'ut
 if (has('stop')) {
   const s = readState();
   let stopped = false;
-  if (s?.pid) { try { process.kill(s.pid); stopped = true; } catch {} }
+  // The saved process id may be another program's by now (the server crashed and the id was handed out
+  // again): stop it only when this map's server answers at its address, with its token, under that id.
+  if (Number.isInteger(s?.pid) && typeof s.url === 'string' && typeof s.token === 'string') {
+    try {
+      const r = await fetch(s.url + '/api/status', { headers: { 'x-floorplan-token': s.token }, signal: AbortSignal.timeout(3000) });
+      if (r.ok && (await r.json()).pid === s.pid) { process.kill(s.pid); stopped = true; }
+    } catch {}
+  }
   try { fs.unlinkSync(stateFile); } catch {}
   console.log(stopped ? `Stopped the map server (${s.url}).` : 'The map server was not running.');
   process.exit(0);
