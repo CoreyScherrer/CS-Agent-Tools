@@ -27,15 +27,17 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // in which case the build left a note of where the code is. Such a map can be looked at and exported, but
 // not asked or changed: the agent is told to use floorplan/query.mjs, floorplan/plan.json and the skill's
 // scripts, all of which mean the map in the project's own floorplan/ folder.
-let builtElsewhere = false;
+// The note counts whatever it says: if it can't be read, or the code has moved since, the map still isn't asked.
+const rootNote = path.join(here, '.cache', 'root.json');
+const builtElsewhere = fs.existsSync(rootNote);
 const root = (() => {
   try {
-    const noted = JSON.parse(fs.readFileSync(path.join(here, '.cache', 'root.json'), 'utf8')).root;
-    if (typeof noted === 'string' && path.isAbsolute(noted) && fs.statSync(noted).isDirectory()) { builtElsewhere = true; return noted; }
+    const noted = JSON.parse(fs.readFileSync(rootNote, 'utf8')).root;
+    if (typeof noted === 'string' && path.isAbsolute(noted) && fs.statSync(noted).isDirectory()) return noted;
   } catch {}
   return path.resolve(here, '..');
 })();
-const ELSEWHERE = 'This map was built outside its project (with --out), so it can be looked at and exported but not asked or changed. Build the map in the project\u2019s own floorplan folder to ask from it.';
+const ELSEWHERE = 'This map was built outside its project\u2019s floorplan folder (with --out), so it can be looked at and exported but not asked or changed. Build the map in the project\u2019s own floorplan folder to ask from it.';
 const argv = process.argv.slice(2);
 const opt = (name, dflt) => { const i = argv.indexOf('--' + name); return i < 0 ? dflt : argv[i + 1]; };
 const has = (name) => argv.includes('--' + name);
