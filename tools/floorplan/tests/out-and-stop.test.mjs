@@ -115,5 +115,13 @@ test('a map built with --out inside a project is not scanned as that project\'s 
     run('scan.mjs', root);
     assert.deepEqual(JSON.parse(fs.readFileSync(scanFile, 'utf8')).files.map((f) => f.path).sort(), before);
     assert.deepEqual(before, ['app/a.js', 'app/b.js']);
+    // a folder of the project's own that happens to hold a .cache/root.json is still scanned
+    for (const [dir, note] of [['tools', '{"root":"/somewhere/else"}'], ['lib', 'not json'], ['pkg', JSON.stringify({ root })]]) {
+      fs.mkdirSync(path.join(root, dir, '.cache'), { recursive: true });
+      fs.writeFileSync(path.join(root, dir, '.cache', 'root.json'), note);
+      fs.writeFileSync(path.join(root, dir, 'own.js'), 'export const own = 1;\n');
+    }
+    run('scan.mjs', root);
+    assert.deepEqual(JSON.parse(fs.readFileSync(scanFile, 'utf8')).files.map((f) => f.path).sort(), ['app/a.js', 'app/b.js', 'lib/own.js', 'pkg/own.js', 'tools/own.js']);
   } finally { cleanup(root); }
 });
