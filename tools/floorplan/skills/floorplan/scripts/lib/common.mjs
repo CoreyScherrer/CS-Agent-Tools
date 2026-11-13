@@ -99,8 +99,11 @@ export const HARD_IGNORE_DIRS = new Set([
 /** The folder the map lives in, at the codebase root. Maps made before the rename used show-code/. */
 export const MAP_DIR = 'floorplan';
 export const LEGACY_MAP_DIR = 'show-code';
-/** True for a folder holding a map, so a project's own folder that happens to be called "floorplan" isn't taken for one. */
-export const isMapDir = (d) => ['architecture.json', 'plan.json', 'graph.json', '.cache'].some((f) => fs.existsSync(path.join(d, f)));
+/**
+ * True for a folder holding a map, so a project's own folder that happens to be called "floorplan" isn't taken
+ * for one. A bare .cache/ doesn't count (plenty of tools make one): it has to hold this skill's scan.
+ */
+export const isMapDir = (d) => ['architecture.json', 'plan.json', 'graph.json', path.join('.cache', 'scan.json')].some((f) => fs.existsSync(path.join(d, f)));
 /**
  * Keeps the map folder out of git: its own .gitignore ignores everything in it, itself included, so
  * nothing in the project's tracked files changes. Returns a warning when git already tracks files

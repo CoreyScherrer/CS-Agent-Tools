@@ -472,6 +472,12 @@ fs.writeFileSync(path.join(outDir, 'query.mjs'), `${graphQuery}
 // ---- cli ----
 ${fs.readFileSync(path.join(SKILL_DIR, 'assets', 'query-cli.mjs'), 'utf8')}`);
 fs.copyFileSync(path.join(SKILL_DIR, 'assets', 'serve.mjs'), path.join(outDir, 'serve.mjs'));
+// a map built outside the codebase (--out): leave serve.mjs a note of where the code is, so questions run there
+{
+  const note = path.join(outDir, '.cache', 'root.json');
+  if (path.dirname(outDir) !== root) { fs.mkdirSync(path.dirname(note), { recursive: true }); fs.writeFileSync(note, JSON.stringify({ root })); }
+  else fs.rmSync(note, { force: true });
+}
 // a blueprint can be changed from the map: serve.mjs redraws it with this skill's plan.mjs and build.mjs
 if (scan.blueprint) { fs.mkdirSync(path.join(outDir, '.cache'), { recursive: true }); fs.writeFileSync(path.join(outDir, '.cache', 'skill.json'), JSON.stringify({ dir: SKILL_DIR })); }
 // the logo and tab icon are inlined so the map stays one self-contained file

@@ -44,7 +44,8 @@ const hadTabs = status?.tabs > 0;
 
 if (status && status.hash !== hash) {
   // a newer serve.mjs came with this build: restart so the map gets it; open tabs reconnect and reload
-  try { process.kill(s.pid); } catch {}
+  // (only the process the server itself reports: the saved id alone may be another program's by now)
+  try { if (status.pid === s.pid) process.kill(s.pid); } catch {}
   for (let i = 0; i < 20 && alive(s.pid); i++) await sleep(150);
   status = null;
   restarted = true;
