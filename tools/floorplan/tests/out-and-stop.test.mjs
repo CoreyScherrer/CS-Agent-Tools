@@ -83,6 +83,18 @@ test('a map built with --out somewhere else knows where its code is, and says wh
     assert.match(asked, /^event: failure/);
     assert.match(asked, /built outside its project/);
     assert.match((await (await post('/api/plan/undo', {})).json()).error, /built outside its project/);
+    // a folder beside floorplan/ inside the project is just as much somewhere else
+    const beside = path.join(root, 'alternate-map');
+    run('build.mjs', root, '--no-claude-md', '--out', beside, '--arch', path.join(root, 'floorplan', 'architecture.json'), '--scan', path.join(root, 'floorplan', '.cache', 'scan.json'));
+    assert.ok(fs.existsSync(path.join(beside, '.cache', 'root.json')));
+    // and a note that can no longer be read (the code moved) still keeps the map from being asked
+    await stop(server);
+    fs.writeFileSync(path.join(out, '.cache', 'root.json'), JSON.stringify({ root: path.join(root, 'moved-away') }));
+    const again = await start(path.join(out, 'serve.mjs'), out);
+    server = again.server;
+    const token2 = JSON.parse(fs.readFileSync(path.join(out, '.cache', 'server.json'), 'utf8')).token;
+    const r = await fetch(again.base + '/api/ask', { method: 'POST', headers: { 'x-floorplan-token': token2, 'content-type': 'application/json' }, body: JSON.stringify({ question: 'x' }) });
+    assert.match(await r.text(), /built outside its project/);
     // the usual place needs no note, and a rebuild there clears one
     assert.ok(!fs.existsSync(path.join(root, 'floorplan', '.cache', 'root.json')));
   } finally { if (server) await stop(server); cleanup(root); cleanup(out); }

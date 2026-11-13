@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compileGlob, parseArgs, fmtNum, mapDir, keepOutOfGit } from './lib/common.mjs';
+import { compileGlob, parseArgs, fmtNum, mapDir, keepOutOfGit, MAP_DIR } from './lib/common.mjs';
 import { fallbackFileName, fallbackRouteName, routeKey } from './lib/names.mjs';
 import { buildHealth, withDismissed, dismissalFor } from './lib/health.mjs';
 import { buildPlanHealth } from './lib/blueprint.mjs';
@@ -472,10 +472,11 @@ fs.writeFileSync(path.join(outDir, 'query.mjs'), `${graphQuery}
 // ---- cli ----
 ${fs.readFileSync(path.join(SKILL_DIR, 'assets', 'query-cli.mjs'), 'utf8')}`);
 fs.copyFileSync(path.join(SKILL_DIR, 'assets', 'serve.mjs'), path.join(outDir, 'serve.mjs'));
-// a map built outside the codebase (--out): leave serve.mjs a note of where the code is, so questions run there
+// a map built anywhere but the project's own floorplan/ folder (--out): leave serve.mjs a note of where the code is.
+// Only the map in that folder can be asked or changed (see serve.mjs).
 {
   const note = path.join(outDir, '.cache', 'root.json');
-  if (path.dirname(outDir) !== root) { fs.mkdirSync(path.dirname(note), { recursive: true }); fs.writeFileSync(note, JSON.stringify({ root })); }
+  if (outDir !== path.join(root, MAP_DIR)) { fs.mkdirSync(path.dirname(note), { recursive: true }); fs.writeFileSync(note, JSON.stringify({ root })); }
   else fs.rmSync(note, { force: true });
 }
 // a blueprint can be changed from the map: serve.mjs redraws it with this skill's plan.mjs and build.mjs

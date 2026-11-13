@@ -62,6 +62,12 @@ Ask Claude to move it, or edit the `paths` patterns in `floorplan/architecture.j
 ### "floorplan/ already exists here and isn't a map"
 Your project has its own folder called `floorplan`, which Floorplan won't write into. Rename your folder, then ask for the floorplan again. (The scripts have an `--out <folder>` option, but in this version only part of the tool follows it, so the map doesn't work from another folder.)
 
+### A map built with `--out` can't be asked
+A map built somewhere other than the project's own `floorplan/` folder (`build.mjs --out <folder>`) can be looked at and exported, but its Ask bar answers that it can't be asked or changed. Questions and blueprint changes work on the map in `floorplan/`: build it there, without `--out`.
+
+### My project's own `floorplan/` folder is missing from the map
+A folder called `floorplan/` that holds a file named `architecture.json`, `plan.json` or `graph.json` is taken for a map and left out of the scan, even when those files are yours. Rename your folder or those files.
+
 ### `git status` shows files under `floorplan/`
 They were committed before Floorplan started ignoring the folder. Untrack them, keeping the files on disk:
 
