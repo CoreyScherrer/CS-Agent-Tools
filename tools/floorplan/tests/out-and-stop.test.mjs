@@ -65,7 +65,7 @@ test('a project\'s own floorplan/ folder with a .cache/ in it is not taken for a
   } finally { cleanup(root); }
 });
 
-test('a map built with --out somewhere else still answers about the code it maps', async () => {
+test('a map built with --out somewhere else knows where its code is, and says why it cannot be asked', async () => {
   const root = shopApp();
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'floorplan-out-'));
   let server;
@@ -77,6 +77,12 @@ test('a map built with --out somewhere else still answers about the code it maps
     const { token } = JSON.parse(fs.readFileSync(path.join(out, '.cache', 'server.json'), 'utf8'));
     const status = await (await fetch(started.base + '/api/status', { headers: { 'x-floorplan-token': token } })).json();
     assert.equal(fs.realpathSync(status.root), fs.realpathSync(root));
+    // the agent's instructions name the project's own floorplan/ folder, so this map is not asked or changed
+    const post = (p, body) => fetch(started.base + p, { method: 'POST', headers: { 'x-floorplan-token': token, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const asked = await (await post('/api/ask', { question: 'How do refunds work?' })).text();
+    assert.match(asked, /^event: failure/);
+    assert.match(asked, /built outside its project/);
+    assert.match((await (await post('/api/plan/undo', {})).json()).error, /built outside its project/);
     // the usual place needs no note, and a rebuild there clears one
     assert.ok(!fs.existsSync(path.join(root, 'floorplan', '.cache', 'root.json')));
   } finally { if (server) await stop(server); cleanup(root); cleanup(out); }
