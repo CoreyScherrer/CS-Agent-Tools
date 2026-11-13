@@ -118,6 +118,9 @@ test('a requested flow is stored checked and trimmed, and a broken one is not st
   assert.equal(kept.title, '7');
   assert.deepEqual(kept.steps, [{ ref: 'f:a.js', note: 'one' }, { ref: 'f:b.js', note: '' }]);
   assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).flows, [kept]);
+  // a broken replacement under the same id leaves the saved flow as it was
+  assert.deepEqual(await post({ id: 'ok', steps: [null] }), [kept]);
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).flows, [kept]);
   // a file edited by hand into something else: the server answers with no flows and keeps running
   for (const broken of ['{"flows":"all of them"}', '{"flows":[null,3]}', 'not json']) {
     fs.writeFileSync(file, broken);

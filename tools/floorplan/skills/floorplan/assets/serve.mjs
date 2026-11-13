@@ -24,14 +24,18 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // The codebase is the folder above the map, unless the map was built somewhere else (build.mjs --out),
-// in which case the build left a note of where the code is.
+// in which case the build left a note of where the code is. Such a map can be looked at and exported, but
+// not asked or changed: the agent is told to use floorplan/query.mjs, floorplan/plan.json and the skill's
+// scripts, all of which mean the map in the project's own floorplan/ folder.
+let builtElsewhere = false;
 const root = (() => {
   try {
     const noted = JSON.parse(fs.readFileSync(path.join(here, '.cache', 'root.json'), 'utf8')).root;
-    if (typeof noted === 'string' && path.isAbsolute(noted) && fs.statSync(noted).isDirectory()) return noted;
+    if (typeof noted === 'string' && path.isAbsolute(noted) && fs.statSync(noted).isDirectory()) { builtElsewhere = true; return noted; }
   } catch {}
   return path.resolve(here, '..');
 })();
+const ELSEWHERE = 'This map was built outside its project (with --out), so it can be looked at and exported but not asked or changed. Build the map in the project\u2019s own floorplan folder to ask from it.';
 const argv = process.argv.slice(2);
 const opt = (name, dflt) => { const i = argv.indexOf('--' + name); return i < 0 ? dflt : argv[i + 1]; };
 const has = (name) => argv.includes('--' + name);
@@ -208,7 +212,7 @@ const isEngine = (k) => typeof k === 'string' && Object.hasOwn(ENGINES, k);
 const want = isEngine(asked) ? asked : isEngine(builtBy) ? builtBy : 'claude';
 let engine = null, cli = null;
 for (const k of isEngine(asked) ? [asked] : [want, ...Object.keys(ENGINES).filter((k) => k !== want)]) { cli = ENGINES[k].find(); if (cli) { engine = k; break; } }
-const canChange = !engine || ENGINES[engine].structured;
+const canChange = !builtElsewhere && (!engine || ENGINES[engine].structured);
 // Started from inside a Claude Code or Codex session? Don't let the CLI think it's nested in it.
 function cliEnv() {
   const env = { ...process.env };
@@ -462,6 +466,7 @@ function runAgent(res, send, body) {
 function ask(req, res, body) {
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
   const send = (event, data) => { if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
+  if (builtElsewhere) { send('failure', { code: 'cli_error', message: ELSEWHERE }); return res.end(); }
   if (!cli) { send('failure', { code: 'cli_missing', message: `${ENGINES[want].name} not found.` }); return res.end(); }
   if (body.mode === 'change') return changePlan(res, send, body);
   runAgent(res, send, body)
@@ -603,9 +608,12 @@ const server = http.createServer((req, res) => {
         req.on('data', (d) => { raw += d; if (raw.length > 50000) req.destroy(); });
         req.on('end', () => {
           const body = parseBody(raw);
-          let flows = readFlows().filter((x) => x.id !== body.id && x.id !== body.flow?.id);
           // stored as checked and trimmed as an exported flow: build.mjs reads this file on every build
           const [flow] = req.method === 'POST' ? cleanFlows([body.flow]) : [];
+          // a flow that fails the check changes nothing: the one saved under its id stays
+          if (req.method === 'POST' && !flow) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'That is not a flow: it needs an id and at least two steps.', flows: readFlows() })); }
+          const gone = flow ? flow.id : body.id;
+          let flows = readFlows().filter((x) => x.id !== gone);
           if (flow) flows.push({ ...flow, createdAt: new Date().toISOString() });
           fs.writeFileSync(flowsFile, JSON.stringify({ flows }, null, 2) + '\n');
           res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ flows }));
@@ -650,7 +658,7 @@ const server = http.createServer((req, res) => {
       }
     }
     if (req.method === 'POST' && url.pathname === '/api/plan/undo') {
-      const r = changing ? { ok: false, error: 'A change is still being made.' } : undoChange();
+      const r = builtElsewhere ? { ok: false, error: ELSEWHERE } : changing ? { ok: false, error: 'A change is still being made.' } : undoChange();
       res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(r));
     }
     if (req.method === 'POST' && url.pathname === '/api/cancel') { for (const c of running.values()) c.kill(); res.writeHead(204); return res.end(); }
