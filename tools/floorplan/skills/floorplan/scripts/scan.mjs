@@ -28,14 +28,26 @@ const found = discover(root, { includeWorktrees: !!args['include-worktrees'] });
 const repos = [];
 const fileList = []; // { path, repo }
 const seen = new Set();
-// map folders (ours, or an old show-code/ one) are output, not code
+// map folders are output, not code: ours, an old show-code/ one, or any folder a map of this codebase was
+// built into with build.mjs --out, whatever it is called. The build leaves .cache/root.json there, naming the
+// codebase; a file of that name that says anything else is the project's own, and its folder is scanned.
 const mapDirs = new Map();
+const real = (p) => { try { return fs.realpathSync(p); } catch { return path.resolve(p); } };
+const builtFromHere = (abs) => {
+  try {
+    const noted = JSON.parse(fs.readFileSync(path.join(abs, '.cache', 'root.json'), 'utf8')).root;
+    return typeof noted === 'string' && real(noted) === real(root) && fs.existsSync(path.join(abs, 'graph.json'));
+  } catch { return false; }
+};
+const isMapAt = (d, name) => {
+  const abs = path.join(root, d);
+  return ((name === MAP_DIR || name === LEGACY_MAP_DIR) && isMapDir(abs)) || builtFromHere(abs);
+};
 const inMap = (p) => {
   const segs = p.split('/');
   for (let i = 0; i < segs.length - 1; i++) {
-    if (segs[i] !== MAP_DIR && segs[i] !== LEGACY_MAP_DIR) continue;
     const d = segs.slice(0, i + 1).join('/');
-    if (!mapDirs.has(d)) mapDirs.set(d, isMapDir(path.join(root, d)));
+    if (!mapDirs.has(d)) mapDirs.set(d, isMapAt(d, segs[i]));
     if (mapDirs.get(d)) return true;
   }
   return false;
