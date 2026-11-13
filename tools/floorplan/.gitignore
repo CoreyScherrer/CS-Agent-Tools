@@ -1,0 +1,12 @@
+# Local Claude Code settings and dev previews
+.claude/
+CLAUDE.local.md
+
+# A floorplan made of this repo itself (root only: skills/floorplan/ is the plugin)
+/floorplan/
+
+# OS and editor clutter
+.DS_Store
+Thumbs.db
+*.log
+node_modules/

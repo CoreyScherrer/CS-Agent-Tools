@@ -9,6 +9,7 @@ specific to one person's machines._
 | **Memory Archive** (`ma/`) | Persistent memory across AI coding sessions | [Memory-Archive](docs/wiki/Memory-Archive.md) |
 | **Mac Mini Web Server** (`tools/mac-mini-web-server/`) | A home server on a Mac mini, reachable safely from the internet | [Mac-Mini-Web-Server](docs/wiki/Mac-Mini-Web-Server.md) |
 | **Slack Assistant** (`tools/slack-assistant/`) | A personal AI assistant and ops console in your Slack | [Slack-Assistant](docs/wiki/Slack-Assistant.md) |
+| **Floorplan** (`tools/floorplan/`) | An interactive, plain-English map of your codebase, drawn by your AI agent | [Floorplan](docs/wiki/Floorplan.md) |
 | **Product Discovery** (`product-discovery/`) | Enterprise discovery → requirements → artifacts | [Product-Discovery](docs/wiki/Product-Discovery.md) |
 | **Build a Tool** (`agents/`, `skills/build-a-tool/`) | The agent that writes the next guide to the same standard | [Build-A-Tool](docs/wiki/Build-A-Tool.md) |
 | **Agent Skills** (`skills/`) | Working discipline for AI coding sessions | [skills/](skills/) |

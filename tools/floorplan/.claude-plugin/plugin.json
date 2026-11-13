@@ -1,0 +1,24 @@
+{
+  "name": "floorplan",
+  "version": "0.6.1",
+  "description": "See how your app actually fits together: an interactive map of your codebase where every part, file and web request has a plain-English name and description, with a health check, screens, guided flows, questions answered on the map, and highlights of what was just worked on.",
+  "author": {
+    "name": "Hayden Smith",
+    "url": "https://github.com/haydenschmitty"
+  },
+  "homepage": "https://github.com/haydenschmitty/floorplan",
+  "repository": "https://github.com/haydenschmitty/floorplan",
+  "documentationUrl": "https://github.com/haydenschmitty/floorplan/blob/main/docs/README.md",
+  "privacyPolicyUrl": "https://github.com/haydenschmitty/floorplan/blob/main/docs/privacy-and-security.md",
+  "supportUrl": "https://github.com/haydenschmitty/floorplan/issues",
+  "license": "MIT",
+  "keywords": [
+    "codebase",
+    "architecture",
+    "map",
+    "visualization",
+    "onboarding",
+    "diagram",
+    "documentation"
+  ]
+}

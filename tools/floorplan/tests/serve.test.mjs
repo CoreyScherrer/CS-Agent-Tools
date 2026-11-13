@@ -1,0 +1,147 @@
+// The map's local server: it listens only on this machine, and its API answers only the map page it
+// served (a per-start token, from the same origin), so other websites can't use it.
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { shopApp, scanAndBuild, cleanup, mapLink } from './helpers.mjs';
+
+let root, server, base, token;
+before(async () => {
+  root = shopApp();
+  scanAndBuild(root);
+  const port = 20000 + Math.floor(Math.random() * 20000);
+  // no Claude Code or Codex CLI and no waitlist card: this only exercises the server itself
+  server = spawn(process.execPath, [path.join(root, 'floorplan', 'serve.mjs'), '--port', String(port), '--no-open'], {
+    cwd: root, env: { ...process.env, FLOORPLAN_CLAUDE: path.join(root, 'no-such-cli'), FLOORPLAN_CODEX: path.join(root, 'no-such-cli'), FLOORPLAN_NO_PROMPTS: '1' }, stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  base = await new Promise((resolve, reject) => {
+    let out = '';
+    const timer = setTimeout(() => reject(new Error(`server didn't start: ${out}`)), 20000);
+    server.stdout.on('data', (d) => { out += d; const m = /Floorplan: (http:\/\/\S+)/.exec(out); if (m) { clearTimeout(timer); resolve(m[1]); } });
+    server.on('exit', (code) => reject(new Error(`server exited (${code}): ${out}`)));
+  });
+  token = /"token":"([0-9a-f]+)"/.exec(await (await fetch(mapLink(root))).text())?.[1];
+});
+after(async () => {
+  // wait for the server to exit first: on Windows its working folder can't be removed while it runs
+  if (server && server.exitCode === null) await new Promise((resolve) => { server.once('exit', resolve); server.kill(); });
+  cleanup(root);
+});
+
+/** The map's page key, as its own link carries it. */
+const k = () => '?k=' + new URL(mapLink(root)).searchParams.get('k');
+const api = (p, { headers = {}, ...opts } = {}) => fetch(base + p, { ...opts, headers: { 'content-type': 'application/json', ...headers } });
+
+test('it listens on 127.0.0.1 only', () => {
+  assert.match(base, /^http:\/\/127\.0\.0\.1:\d+$/);
+});
+
+test('the page it serves carries a fresh token', () => {
+  assert.match(token || '', /^[0-9a-f]{32}$/);
+});
+
+test('API calls without the token are refused', async () => {
+  assert.equal((await api('/api/flows')).status, 403);
+  assert.equal((await api('/api/ask', { method: 'POST', body: '{"question":"hi"}' })).status, 403);
+  assert.equal((await api('/api/flows', { headers: { 'x-floorplan-token': 'wrong' } })).status, 403);
+});
+
+test('API calls with the token from another website are refused', async () => {
+  const r = await api('/api/flows', { headers: { 'x-floorplan-token': token, origin: 'https://evil.example' } });
+  assert.equal(r.status, 403);
+});
+
+/** A request to the server under another host name, as a site that rebinds its domain to 127.0.0.1 would send. */
+const asHost = (host, p) => new Promise((resolve, reject) => {
+  const u = new URL(base + p);
+  http.get({ hostname: u.hostname, port: u.port, path: u.pathname + u.search, headers: { host, 'x-floorplan-token': token } }, (r) => { r.resume(); resolve(r.statusCode); }).on('error', reject);
+});
+
+test('requests under any other host name are refused, page included (DNS rebinding)', async () => {
+  const port = new URL(base).port;
+  assert.equal(await asHost(`evil.example:${port}`, '/'), 403);
+  assert.equal(await asHost(`evil.example:${port}`, '/api/flows'), 403);
+  assert.equal(await asHost('127.0.0.1:1', '/'), 403);
+  assert.equal(await asHost(`localhost:${port}`, '/' + k()), 200);
+  assert.equal(await asHost(`127.0.0.1:${port}`, '/api/flows'), 200);
+});
+
+test('the map and its files are given only at the map\'s own link, and no cookie carries its key', async () => {
+  const link = mapLink(root);
+  const key = new URL(link).searchParams.get('k');
+  assert.match(key, /^[0-9a-f]{32}$/);
+  // the bare address, as any other account on this computer could ask for it: no page, so no token
+  for (const p of ['/', '/index.html', '/graph.json', '/serve.mjs', '/?k=wrong', '/?k=', '/?k=' + key.slice(0, -1)]) {
+    const r = await fetch(base + p);
+    assert.equal(r.status, 403, p);
+    assert.doesNotMatch(await r.text(), /"token"/, p);
+  }
+  const first = await fetch(link);
+  assert.equal(first.status, 200);
+  assert.equal((await fetch(base + '/graph.json' + k())).status, 200);
+  // a cookie for 127.0.0.1 goes to every port on it, so to any other server on this computer: the key is never
+  // put in one, and one that holds it opens nothing
+  assert.equal(first.headers.get('set-cookie'), null);
+  assert.equal((await fetch(base + '/', { headers: { cookie: `fp_${new URL(base).port}=${key}; k=${key}` } })).status, 403);
+  assert.doesNotMatch(fs.readFileSync(path.join(root, 'floorplan', 'serve.mjs'), 'utf8'), /Set-Cookie|headers\.cookie/);
+  // links out of the map don't carry its address
+  assert.equal(first.headers.get('referrer-policy'), 'no-referrer');
+  // the cache folder stays unserved even with the key
+  assert.equal((await fetch(base + '/.cache/key' + k())).status, 404);
+  // an open tab looks for the map at its own address after a restart, key included
+  assert.match(fs.readFileSync(path.join(root, 'floorplan', 'index.html'), 'utf8'), /const check = \(\) => fetch\('\/' \+ location\.search, \{ cache: 'no-store' \}\)/);
+});
+
+test('the server\'s token and page key are readable by this account only', { skip: process.platform === 'win32' }, () => {
+  const cache = path.join(root, 'floorplan', '.cache');
+  assert.equal(fs.statSync(cache).mode & 0o777, 0o700);
+  assert.equal(fs.statSync(path.join(cache, 'server.json')).mode & 0o777, 0o600);
+  assert.equal(fs.statSync(path.join(cache, 'key')).mode & 0o777, 0o600);
+});
+
+test('API calls with the token from the map itself work', async () => {
+  const r = await api('/api/flows', { headers: { 'x-floorplan-token': token } });
+  assert.equal(r.status, 200);
+  assert.deepEqual(await r.json(), { flows: [] });
+});
+
+test('a requested flow is stored checked and trimmed, and a broken one is not stored', async () => {
+  const post = async (flow) => (await (await api('/api/flows', { method: 'POST', headers: { 'x-floorplan-token': token, 'content-type': 'application/json' }, body: JSON.stringify({ flow }) })).json()).flows;
+  const file = path.join(root, 'floorplan', 'custom-flows.json');
+  assert.deepEqual(await post({ id: 'bad', steps: [null] }), [], 'a step that is not a step');
+  assert.deepEqual(await post({ id: 'short', steps: [{ ref: 'f:a.js' }] }), [], 'fewer than two steps');
+  const [kept] = await post({ id: 'ok', title: 7, extra: { big: 'x'.repeat(100) }, steps: [{ ref: 'f:a.js', note: 'one', more: 1 }, null, { ref: 'f:b.js' }] });
+  assert.deepEqual(Object.keys(kept).sort(), ['createdAt', 'custom', 'description', 'id', 'steps', 'title']);
+  assert.equal(kept.title, '7');
+  assert.deepEqual(kept.steps, [{ ref: 'f:a.js', note: 'one' }, { ref: 'f:b.js', note: '' }]);
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).flows, [kept]);
+  // a broken replacement under the same id leaves the saved flow as it was
+  assert.deepEqual(await post({ id: 'ok', steps: [null] }), [kept]);
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).flows, [kept]);
+  // a file edited by hand into something else: the server answers with no flows and keeps running
+  for (const broken of ['{"flows":"all of them"}', '{"flows":[null,3]}', 'not json']) {
+    fs.writeFileSync(file, broken);
+    assert.deepEqual(await post({ id: 'bad', steps: [null] }), [], broken);
+  }
+  fs.rmSync(file);
+});
+
+test('files outside the map folder are never served', async () => {
+  // including a neighbouring folder whose name starts with "floorplan"
+  fs.mkdirSync(path.join(root, 'floorplan-old'));
+  fs.writeFileSync(path.join(root, 'floorplan-old', 'notes.txt'), 'private notes');
+  for (const p of ['/../shop-api/config.js', '/%2e%2e/shop-api/config.js', '/..%2fshop-api%2fconfig.js', '/..%2ffloorplan-old%2fnotes.txt']) {
+    const r = await fetch(base + p + k());
+    const body = await r.text();
+    assert.equal(r.status, 404, p);
+    assert.ok(!body.includes('DB_PASSWORD') && !body.includes('private notes'), `${p} -> ${r.status}`);
+  }
+});
+
+test('a malformed address gets an error, and the server keeps running', async () => {
+  assert.equal((await fetch(base + '/%E0%A4%A' + k())).status, 400);
+  assert.equal((await fetch(mapLink(root))).status, 200);
+});

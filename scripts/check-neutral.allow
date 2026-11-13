@@ -1,0 +1,43 @@
+# Reviewed exceptions for scripts/check-neutral.sh. One "path:match" per line;
+# "path:*" accepts every hit in one file. Add a line only after checking that the
+# match is a public vendor domain, a test fixture or a code expression. The only
+# real service and address allowed are a bundled project's own published ones,
+# named below; never the infrastructure of whoever is adding the line.
+#
+# tools/floorplan is bundled third-party code (Hayden Smith's Floorplan, MIT).
+# Its hits are: public vendor and standards domains in docs and source, made-up
+# domains in test fixtures, JavaScript property reads such as "s.app" that look
+# like hostnames, the original author's waitlist service and contact address in
+# his own privacy page, and licence addresses in the bundled elkjs layout engine.
+tools/floorplan/skills/floorplan/assets/vendor/elk.bundled.js:apache.org
+tools/floorplan/skills/floorplan/assets/vendor/elk.bundled.js:eclipse.org
+tools/floorplan/skills/floorplan/assets/vendor/elk.bundled.js:java.io
+tools/floorplan/skills/floorplan/assets/vendor/elk.bundled.js:w3.org
+tools/floorplan/README.md:nodejs.org
+tools/floorplan/README.md:shields.io
+tools/floorplan/docs/codex.md:nodejs.org
+tools/floorplan/docs/development.md:semver.org
+tools/floorplan/docs/getting-started.md:nodejs.org
+tools/floorplan/docs/how-it-works.md:eclipse.dev
+tools/floorplan/docs/is-it-safe.md:run.app
+tools/floorplan/docs/privacy-and-security.md:gmail.com
+tools/floorplan/docs/privacy-and-security.md:hismith142@gmail.com
+tools/floorplan/docs/troubleshooting.md:nodejs.org
+tools/floorplan/skills/floorplan/assets/serve.mjs:run.app
+tools/floorplan/skills/floorplan/assets/ui/30-screens.js:s.app
+tools/floorplan/skills/floorplan/assets/ui/40-tour.js:s.app
+tools/floorplan/skills/floorplan/assets/vendor/fonts/inter-LICENSE.txt:sil.org
+tools/floorplan/skills/floorplan/assets/vendor/fonts/jetbrains-mono-LICENSE.txt:sil.org
+tools/floorplan/skills/floorplan/assets/viewer.html:w3.org
+tools/floorplan/skills/floorplan/references/schema.md:squareup.com
+tools/floorplan/skills/floorplan/references/schema.md:stripe.com
+tools/floorplan/skills/floorplan/scripts/lib/extract.mjs:cloudfunctions.net
+tools/floorplan/skills/floorplan/scripts/lib/health.mjs:myapp.com
+tools/floorplan/skills/floorplan/scripts/lib/screens.mjs:a.app
+tools/floorplan/skills/floorplan/scripts/lib/screens.mjs:b.app
+tools/floorplan/skills/floorplan/scripts/lib/screens.mjs:s.app
+tools/floorplan/tests/firebase.test.mjs:cloudfunctions.net
+tools/floorplan/tests/secrets.test.mjs:cloudflareinsights.com
+tools/floorplan/tests/stack-health.test.mjs:myapp.com
+tools/floorplan/tests/stack-health.test.mjs:n@app.post
+tools/floorplan/tests/stack-health.test.mjs:tidy.app

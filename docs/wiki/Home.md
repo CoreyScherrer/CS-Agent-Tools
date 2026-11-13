@@ -17,6 +17,7 @@ together. Nothing here is specific to one person's machines, accounts or paths._
 | [[Memory-Archive]] | Persistent memory across AI coding sessions, no network calls | 20 min | 30 min |
 | [[Mac-Mini-Web-Server]] | A home server on a Mac mini, safely reachable from the internet, with a private network for admin | 3–5 h | 6–10 h |
 | [[Slack-Assistant]] | A personal AI assistant and ops console in your Slack workspace | 1–2 h | 2–4 h |
+| [[Floorplan]] | An interactive, plain-English map of your codebase, with a health check and guided flows | 5 min | 3–40 min |
 | [[Product-Discovery]] | An evidence-first product discovery framework with 25 skills | 10 min | — |
 | [[Build-A-Tool]] | The agent that writes the next guide to the same standard | 5 min | per tool |
 

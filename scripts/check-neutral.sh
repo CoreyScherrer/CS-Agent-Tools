@@ -9,6 +9,12 @@
 # credentials. Allowed placeholders: example.com, example.net, acme, your-mini,
 # hooks.example.com, 192.0.2.x / 198.51.100.x / 203.0.113.x (RFC 5737), 100.64.0.0/10
 # shown as 100.x.y.z only when all octets are literally "x", "y", "z".
+#
+# Reviewed exceptions live in scripts/check-neutral.allow, one "path:match" per
+# line ("path:*" accepts everything in one file). It exists for bundled
+# third-party code such as tools/floorplan, whose source and test fixtures name
+# public vendor domains. A new hostname or address there still fails until it is
+# reviewed and added.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 paths=("$@")
@@ -17,33 +23,43 @@ paths=("$@")
 fail=0
 hit() { printf '%s\n' "$1"; fail=1; }
 
+# Drop "path:line:match" hits whose "path:match" (or "path:*") is in the allow file.
+ALLOW="scripts/check-neutral.allow"
+allowed() {
+  if [ ! -f "$ALLOW" ]; then cat; return; fi
+  awk -v allow="$ALLOW" '
+    BEGIN { while ((getline l < allow) > 0) if (l != "" && l !~ /^#/) ok[l] = 1 }
+    { n = split($0, f, ":"); path = f[1]; m = f[3]; for (i = 4; i <= n; i++) m = m ":" f[i]
+      if (!((path ":" m) in ok) && !((path ":*") in ok)) print }'
+}
+
 # 1. Real-looking hostnames that are not documentation domains.
-out=$(grep -rnoE '\b[a-z0-9-]+\.(com|net|org|io|dev|app|ts\.net)\b' "${paths[@]}" 2>/dev/null \
-  | grep -vE '(example\.(com|net|org)|slack\.com|api\.slack\.com|cloudflare\.com|github\.com|anthropic\.com|google\.com|googleapis\.com|tailscale\.com|ui\.com|apple\.com|claude\.com|claude\.ai|docs\.[a-z]+\.com|developers\.[a-z]+\.com|console\.[a-z]+\.com|one\.dash\.cloudflare\.com|dash\.cloudflare\.com|fonts\.googleapis\.com|pushover\.net|open-meteo\.com|login\.tailscale\.com|brew\.sh|python\.org|homebrew\.[a-z]+|nginx\.org|github\.io|caddyserver\.com|letsencrypt\.org|openai\.com|pypi\.org|npmjs\.com|microsoft\.com|ubnt\.com|unifi\.ui\.com)' )
+out=$(grep -rnoIE '\b[a-z0-9-]+\.(com|net|org|io|dev|app|ts\.net)\b' "${paths[@]}" 2>/dev/null \
+  | grep -vE '(example\.(com|net|org)|slack\.com|api\.slack\.com|cloudflare\.com|github\.com|anthropic\.com|google\.com|googleapis\.com|tailscale\.com|ui\.com|apple\.com|claude\.com|claude\.ai|docs\.[a-z]+\.com|developers\.[a-z]+\.com|console\.[a-z]+\.com|one\.dash\.cloudflare\.com|dash\.cloudflare\.com|fonts\.googleapis\.com|pushover\.net|open-meteo\.com|login\.tailscale\.com|brew\.sh|python\.org|homebrew\.[a-z]+|nginx\.org|github\.io|caddyserver\.com|letsencrypt\.org|openai\.com|pypi\.org|npmjs\.com|microsoft\.com|ubnt\.com|unifi\.ui\.com)' | allowed)
 [ -n "$out" ] && hit "Hostnames that are not documentation domains:
 $out"
 
 # 2. IPv4 addresses outside RFC 5737 documentation ranges and the obvious loopback.
-out=$(grep -rnoE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' "${paths[@]}" 2>/dev/null \
-  | grep -vE '(127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.|192\.168\.(1|10|20|30|100)\.(0|1|254)|10\.0\.0\.(0|1)|100\.64\.0\.0|255\.255\.255\.)')
+out=$(grep -rnoIE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' "${paths[@]}" 2>/dev/null \
+  | grep -vE '(127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.|192\.168\.(1|10|20|30|100)\.(0|1|254)|10\.0\.0\.(0|1)|100\.64\.0\.0|255\.255\.255\.)' | allowed)
 [ -n "$out" ] && hit "IP addresses that are not documentation addresses:
 $out"
 
 # 3. Home-directory paths and macOS user paths that are not placeholders.
-out=$(grep -rnoE '/Users/[A-Za-z0-9_-]+|/home/[A-Za-z0-9_-]+' "${paths[@]}" 2>/dev/null \
-  | grep -vE '/Users/(you|svc-[a-z-]+|web|acme|<[a-z-]+>|\$[A-Z_]+)|/home/(you|svc-[a-z-]+|acme|<[a-z-]+>|\$[A-Z_]+)')
+out=$(grep -rnoIE '/Users/[A-Za-z0-9_-]+|/home/[A-Za-z0-9_-]+' "${paths[@]}" 2>/dev/null \
+  | grep -vE '/Users/(you|svc-[a-z-]+|web|acme|<[a-z-]+>|\$[A-Z_]+)|/home/(you|svc-[a-z-]+|acme|<[a-z-]+>|\$[A-Z_]+)' | allowed)
 [ -n "$out" ] && hit "Real-looking home paths:
 $out"
 
 # 4. Slack/Google/Cloudflare-looking identifiers that are not the zero placeholders.
-out=$(grep -rnoE '\b(xox[bap]-[A-Za-z0-9-]{10,}|[UC]0[A-Z0-9]{8,}|AKIA[0-9A-Z]{16}|sk-ant-[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{10,})\b' "${paths[@]}" 2>/dev/null \
-  | grep -vE '([UC]0{10}|xoxb-paste-here)')
+out=$(grep -rnoIE '\b(xox[bap]-[A-Za-z0-9-]{10,}|[UC]0[A-Z0-9]{8,}|AKIA[0-9A-Z]{16}|sk-ant-[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{10,})\b' "${paths[@]}" 2>/dev/null \
+  | grep -vE '([UC]0{10}|xoxb-paste-here)' | allowed)
 [ -n "$out" ] && hit "Identifiers that look real:
 $out"
 
 # 5. Email addresses other than documentation ones.
-out=$(grep -rnoE '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}\b' "${paths[@]}" 2>/dev/null \
-  | grep -vE '@example\.(com|net|org)')
+out=$(grep -rnoIE '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}\b' "${paths[@]}" 2>/dev/null \
+  | grep -vE '@example\.(com|net|org)' | allowed)
 [ -n "$out" ] && hit "Email addresses:
 $out"
 
