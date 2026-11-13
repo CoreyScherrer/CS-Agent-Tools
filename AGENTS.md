@@ -10,7 +10,11 @@ and their AI agent can follow. `README.md` lists them. Every guide follows
 `docs/GUIDE-STANDARD.md`; new guides are made with `skills/build-a-tool/SKILL.md`
 (or the `agents/build-a-tool.md` subagent). Nothing here may be specific to one
 person's machines: run `scripts/check-neutral.sh` before committing anything under
-`docs/wiki/`, `tools/`, `skills/` or `agents/`. The wiki is `docs/wiki/`, flat, and
+`docs/wiki/`, `tools/`, `skills/` or `agents/`. `tools/floorplan/` is a bundled
+third-party plugin (code, not a guide): run `node --test` inside it after any
+change, and `node tools/checksums.mjs` there if a file under its `skills/` or
+plugin manifests changed. Its reviewed neutrality exceptions are in
+`scripts/check-neutral.allow`. The wiki is `docs/wiki/`, flat, and
 `scripts/publish-wiki.sh` replaces the whole GitHub wiki with it — run it from
 `main` after merge, never from a branch.
 

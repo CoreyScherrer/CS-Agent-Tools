@@ -8,6 +8,14 @@ CS-Agent-Tools is licensed in two parts.
    International (CC BY 4.0): https://creativecommons.org/licenses/by/4.0/
    You may share and adapt them for any purpose, with attribution.
 
+3. tools/floorplan/ is a bundled copy of Floorplan by Hayden Smith
+   (https://github.com/haydenschmitty/floorplan), MIT License, with changes by
+   Corey Scherrer under the same license. Its code and its documentation are
+   both covered by tools/floorplan/LICENSE, not by parts 1 and 2 above. It
+   includes elkjs (EPL-2.0) and the Inter and JetBrains Mono fonts (SIL OFL
+   1.1); their licenses are in
+   tools/floorplan/skills/floorplan/assets/vendor/.
+
 ----------------------------------------------------------------------
 
 MIT License

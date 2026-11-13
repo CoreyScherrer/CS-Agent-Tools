@@ -1,0 +1,46 @@
+{
+  "name": "floorplan",
+  "version": "0.6.1",
+  "description": "See how your app actually fits together: an interactive map of your codebase where every part, file and web request has a plain-English name and description, with a health check, screens, guided flows, questions answered on the map, and highlights of what was just worked on.",
+  "author": {
+    "name": "Hayden Smith",
+    "url": "https://github.com/haydenschmitty"
+  },
+  "homepage": "https://github.com/haydenschmitty/floorplan",
+  "repository": "https://github.com/haydenschmitty/floorplan",
+  "license": "MIT",
+  "keywords": [
+    "codebase",
+    "architecture",
+    "map",
+    "visualization",
+    "onboarding",
+    "diagram",
+    "documentation"
+  ],
+  "skills": "./skills/",
+  "requires_local_executor": true,
+  "interface": {
+    "displayName": "Floorplan",
+    "shortDescription": "See how your app fits together",
+    "longDescription": "Codex reads your codebase and draws an interactive map of it. Every part, file and web request gets a plain-English name and description, and every connection between them is shown. It adds a health check for exposed keys and endpoints anyone can change, your app's screens, guided flows, highlights of what was just worked on, and an Ask bar that answers questions on the map using your own Codex sign-in.",
+    "developerName": "Hayden Smith",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/haydenschmitty/floorplan",
+    "privacyPolicyURL": "https://github.com/haydenschmitty/floorplan/blob/main/docs/privacy-and-security.md",
+    "defaultPrompt": [
+      "Draw a floorplan of this codebase",
+      "Update the floorplan with what we just changed",
+      "Show me how the frontend talks to the backend"
+    ],
+    "composerIcon": "./.codex-plugin/icon.png",
+    "logo": "./.codex-plugin/icon.png",
+    "brandColor": "#111111",
+    "screenshots": []
+  }
+}
