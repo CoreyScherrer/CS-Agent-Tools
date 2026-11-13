@@ -28,14 +28,18 @@ const found = discover(root, { includeWorktrees: !!args['include-worktrees'] });
 const repos = [];
 const fileList = []; // { path, repo }
 const seen = new Set();
-// map folders (ours, or an old show-code/ one) are output, not code
+// map folders are output, not code: ours, an old show-code/ one, or any folder a map was built into with
+// build.mjs --out, whatever it is called (the build leaves .cache/root.json there)
 const mapDirs = new Map();
+const isMapAt = (d, name) => {
+  const abs = path.join(root, d);
+  return ((name === MAP_DIR || name === LEGACY_MAP_DIR) && isMapDir(abs)) || fs.existsSync(path.join(abs, '.cache', 'root.json'));
+};
 const inMap = (p) => {
   const segs = p.split('/');
   for (let i = 0; i < segs.length - 1; i++) {
-    if (segs[i] !== MAP_DIR && segs[i] !== LEGACY_MAP_DIR) continue;
     const d = segs.slice(0, i + 1).join('/');
-    if (!mapDirs.has(d)) mapDirs.set(d, isMapDir(path.join(root, d)));
+    if (!mapDirs.has(d)) mapDirs.set(d, isMapAt(d, segs[i]));
     if (mapDirs.get(d)) return true;
   }
   return false;
