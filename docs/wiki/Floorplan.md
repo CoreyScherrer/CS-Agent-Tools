@@ -29,7 +29,8 @@ is Hayden Smith's open-source Floorplan (MIT), version 0.6.1, with changes to th
 viewer that put the map first: names you can read when zoomed out, a tighter
 layout, outside services in columns, one title, a flows column on the left, and an
 embed mode. Its [changelog](https://github.com/CoreyScherrer/CS-Agent-Tools/blob/main/tools/floorplan/CHANGELOG.md) lists each one
-under **Unreleased**. Everything else is the original.
+under **0.6.2**, which is this bundle’s own version number and not the original’s 0.6.2.
+Everything else is the original.
 
 **Known gap.** The original has since released 0.6.2 to 0.7.3. Its 0.7.1 hardened
 the map against a repository that tries to break, leak from or stall it. Those
