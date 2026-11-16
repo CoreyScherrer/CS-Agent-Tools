@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.6.2 (2026-11-15)
+
+The CS-Agent-Tools bundle’s own release, built on the original’s 0.6.1. It is not the original project’s 0.6.2.
 
 - **The live map opens only from its own link** (CS-Agent-Tools bundle): the map's server used to give the page, and the token inside it, to anything on the computer that asked for its address, including another account. It now shows the map and its files only to a browser that came through the address it opens and prints, which ends in `?k=` and a key. The key stays in the address, so reloads, bookmarks and restarts keep working (it is never put in a cookie, which the browser would also send to other programs on the computer), and it is kept in `floorplan/.cache`, which only your account can read now (not enforced on Windows). The bare `http://127.0.0.1:4378` shows a short note saying how to open the map.
 - **Questions run in Claude Code's restricted mode when it has one:** your own settings files, their allow rules and your MCP servers are left out of the run, and reading and searching stay inside the project. Before, a broad allow rule in your settings also applied to questions asked on the map, and files anywhere on the computer could be read. An older Claude Code runs as before.
