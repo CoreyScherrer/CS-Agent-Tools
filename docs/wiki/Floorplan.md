@@ -29,12 +29,15 @@ is Hayden Smith's open-source Floorplan (MIT), version 0.6.1, with changes to th
 viewer that put the map first: names you can read when zoomed out, a tighter
 layout, outside services in columns, one title, a flows column on the left, and an
 embed mode. Its [changelog](https://github.com/CoreyScherrer/CS-Agent-Tools/blob/main/tools/floorplan/CHANGELOG.md) lists each one
-under **0.6.2**, which is this bundle’s own version number and not the original’s 0.6.2.
+under **0.6.2** and **0.6.3**, which are this bundle’s own version numbers and not the original’s.
 Everything else is the original.
 
-**Known gap.** The original has since released 0.6.2 to 0.7.3. Its 0.7.1 hardened
-the map against a repository that tries to break, leak from or stall it. Those
-changes are not in this bundle yet, so **map only code you trust**.
+**Known gap.** The original has since released 0.6.2 to 0.11.0 (as of 2026-11-19),
+and none of those releases is in this bundle. Its 0.7.1 hardened the map against a
+repository that tries to break, leak from or stall it. This bundle has its own fix
+for one case of that (a file name that ran as script in the map), but it does not
+hide secrets written into descriptions and its map carries no content security
+policy. So **map only code you trust**.
 
 ## Who this is for, and what you need
 
@@ -167,8 +170,8 @@ shows the map. The address without the key shows a note, not the map.
 
 - "`floorplan/` already exists here and isn't a map." The project has its own
   folder with that name. Rename that folder first. The error suggests
-  `--out <folder>`, but in this version only part of the tool follows it and the
-  map does not work from another folder.
+  `--out <folder>`: a map built that way can be looked at and exported, but its
+  Ask bar cannot answer questions or make changes.
 - The address is not port 4378. The port was busy and the server took the next
   free one. Use the address the agent printed.
 
@@ -274,7 +277,7 @@ network, or the embedded map draws inside your page with one top bar, not two.
 |---|---|---|
 | The skill does not appear after installing | Plugins load at session start | Start a new session; confirm with `claude plugin list` |
 | Two plugins named `floorplan`, unclear which viewer you have | The original and this bundle share a name | Uninstall one before installing the other |
-| "`floorplan/` already exists here and isn't a map" | The project has its own folder of that name | Rename your folder; `--out <folder>` does not work end to end in this version |
+| "`floorplan/` already exists here and isn't a map" | The project has its own folder of that name | Rename your folder. A map built with `--out <folder>` can be looked at and exported, but not asked or changed |
 | The map is not at port 4378 | The port was in use | Use the address the agent printed |
 | The Ask bar says it needs the Claude Code CLI | The map was opened from its file, or the CLI is not installed | Install the CLI and run `node floorplan/serve.mjs` |
 | The CLI is installed but not found | It is not on `PATH` | `node floorplan/serve.mjs --claude /path/to/claude` |
