@@ -1,13 +1,13 @@
 {
   "name": "floorplan",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "See how your app actually fits together: an interactive map of your codebase where every part, file and web request has a plain-English name and description, with a health check, screens, guided flows, questions answered on the map, and highlights of what was just worked on.",
   "author": {
     "name": "Hayden Smith",
     "url": "https://github.com/haydenschmitty"
   },
-  "homepage": "https://github.com/haydenschmitty/floorplan",
-  "repository": "https://github.com/haydenschmitty/floorplan",
+  "homepage": "https://github.com/CoreyScherrer/CS-Agent-Tools/tree/main/tools/floorplan",
+  "repository": "https://github.com/CoreyScherrer/CS-Agent-Tools",
   "license": "MIT",
   "keywords": [
     "codebase",
@@ -31,8 +31,8 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/haydenschmitty/floorplan",
-    "privacyPolicyURL": "https://github.com/haydenschmitty/floorplan/blob/main/docs/privacy-and-security.md",
+    "websiteURL": "https://github.com/CoreyScherrer/CS-Agent-Tools/tree/main/tools/floorplan",
+    "privacyPolicyURL": "https://github.com/CoreyScherrer/CS-Agent-Tools/blob/main/tools/floorplan/docs/privacy-and-security.md",
     "defaultPrompt": [
       "Draw a floorplan of this codebase",
       "Update the floorplan with what we just changed",

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.3 (2026-11-19)
+
+The CS-Agent-Tools bundle’s own release. It is not the original project’s 0.6.3, and it changes no code.
+
+- **The plugin's links point at this bundle:** the support, documentation, privacy and home page links in the Claude Code and Codex manifests went to the original project, so a problem with this bundle would have been reported to its author. They now go to CS-Agent-Tools. Hayden Smith is still named as the author.
+- **The known gap is stated in full:** the notes said the original was at 0.7.3. It is at 0.11.0, none of its releases after 0.6.1 is in this bundle, and the notes now name what is missing from its 0.7.1 hardening: hiding secrets written into descriptions, and the map's content security policy.
+- **The guide says what `--out` does:** it said a map built with `--out` does not work. Since 0.6.2 such a map can be looked at and exported, but not asked or changed.
+
 ## 0.6.2 (2026-11-15)
 
 The CS-Agent-Tools bundle’s own release, built on the original’s 0.6.1. It is not the original project’s 0.6.2.

@@ -1,12 +1,12 @@
 # Security policy
 
-> **This copy is the CS-Agent-Tools bundle** (its own version 0.6.2), built on Floorplan 0.6.1. Report problems with it through the
+> **This copy is the CS-Agent-Tools bundle** (its own version 0.6.3), built on Floorplan 0.6.1. Report problems with it through the
 > [CS-Agent-Tools repository](https://github.com/CoreyScherrer/CS-Agent-Tools): its **Security** tab, **Report a vulnerability**.
 >
-> **Known gap:** the original project has released 0.6.2 to 0.7.3 since this bundle was cut. Version 0.7.1 hardened
+> **Known gap:** the original project has released 0.6.2 to 0.11.0 since this bundle was cut (as of 2026-11-19), and none of those releases is in it. Version 0.7.1 hardened
 > the map against a repository, or a description written about one, that tries to break, leak from or stall the map.
 > This bundle fixes the one case of that found in its own audit (a file name that ran as script in the map; see the
-> changelog), but the rest of 0.7.1's hardening, including the page's content security policy, is not here yet. The
+> changelog), but the rest of 0.7.1's hardening is not here yet: secrets written into descriptions are not hidden, and the page has no content security policy. The
 > map's server is also for one person on one computer: any program running as you can read its token and page key
 > (other accounts on the computer cannot, except on Windows, where the files' permissions are not set). Until the
 > bundle catches up, map only code you trust.
