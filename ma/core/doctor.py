@@ -90,18 +90,6 @@ def probe_pip():
     return Probe("pip", OK, out.strip()[:120], {"index_check": "not attempted (offline-safe)"})
 
 
-def _dsn_host_port(dsn):
-    """Host and port from a URL-form DSN; ``(None, None)`` for anything else."""
-    from urllib.parse import urlsplit
-    if not dsn or "://" not in dsn:
-        return None, None
-    try:
-        parts = urlsplit(dsn)
-        return parts.hostname, parts.port
-    except ValueError:
-        return None, None
-
-
 def _try_dsn(dsn):
     """Connect with the configured DSN through the driver. Returns (ok, error).
 
@@ -118,6 +106,22 @@ def _try_dsn(dsn):
         return False, type(exc).__name__
 
 
+def _probe_configured_dsn(dsn, detail):
+    """The driver's connect is the only test that reads a DSN the way libpq does."""
+    if not detail["driver_installed"]:
+        return Probe("postgres", WARN,
+                     "a PostgreSQL DSN is configured but no psycopg driver is installed",
+                     detail)
+    ok, err = _try_dsn(dsn)
+    detail["server_reachable"] = ok
+    detail["can_create_db"] = ok
+    if not ok:
+        detail["dsn_error"] = err
+        return Probe("postgres", WARN,
+                     "configured DSN did not connect ({})".format(err), detail)
+    return Probe("postgres", OK, "PostgreSQL usable with the configured DSN", detail)
+
+
 def probe_postgres(dsn=None):
     """Three separate checks: client present, server reachable, DB usable.
 
@@ -125,9 +129,10 @@ def probe_postgres(dsn=None):
     whether a server exists or whether this user may create a database.
 
     When a DSN is configured (``MA_POSTGRES_DSN`` or ``config.local.json``) it is
-    what the archive will actually use, so authentication is tested by
-    connecting with it through the driver. Without one, ``psql`` and the
-    ``PG*`` environment stand in.
+    what the archive will actually use, so it is tested by connecting with it
+    through the driver, and nothing taken from it is printed: a DSN can carry a
+    password, and its host can live in either the URI or the key/value form.
+    Without one, ``psql`` and the ``PG*`` environment stand in.
     """
     from ..storage.postgres_backend import driver_available
 
@@ -136,12 +141,14 @@ def probe_postgres(dsn=None):
         "psql_on_path": bool(shutil.which("psql")),
         "server_reachable": False,
         "can_create_db": False,
+        "configured_dsn": bool(dsn),
     }
 
-    dsn_host, dsn_port = _dsn_host_port(dsn)
-    host = dsn_host or os.environ.get("PGHOST", "127.0.0.1")
-    port = int(dsn_port or os.environ.get("PGPORT", "5432"))
-    detail["configured_dsn"] = bool(dsn)
+    if dsn:
+        return _probe_configured_dsn(dsn, detail)
+
+    host = os.environ.get("PGHOST", "127.0.0.1")
+    port = int(os.environ.get("PGPORT", "5432"))
     try:
         with socket.create_connection((host, port), timeout=2):
             detail["server_reachable"] = True
@@ -156,17 +163,6 @@ def probe_postgres(dsn=None):
     if not detail["driver_installed"]:
         return Probe("postgres", WARN,
                      "server reachable but no psycopg driver installed", detail)
-
-    if dsn:
-        ok, err = _try_dsn(dsn)
-        detail["can_create_db"] = ok
-        if not ok:
-            detail["dsn_error"] = err
-            return Probe("postgres", WARN,
-                         "configured DSN did not connect ({})".format(err), detail)
-        return Probe("postgres", OK,
-                     "PostgreSQL usable at {}:{} with the configured DSN".format(host, port),
-                     detail)
 
     if not detail["psql_on_path"]:
         return Probe("postgres", WARN,
@@ -300,7 +296,13 @@ def recommend_backend(probes):
     if pg and pg.status == OK and pg.detail.get("driver_installed") and pg.detail.get("can_create_db"):
         return "postgres", "PostgreSQL is reachable, authenticated and has a driver installed"
     reason = "PostgreSQL not fully usable"
-    if pg:
+    if pg and pg.detail.get("configured_dsn"):
+        # With a DSN the driver connect is the whole test, so name what stopped it.
+        if not pg.detail.get("driver_installed"):
+            reason = "a PostgreSQL DSN is configured but no psycopg driver is installed"
+        else:
+            reason = "the configured PostgreSQL DSN did not connect"
+    elif pg:
         if not pg.detail.get("server_reachable"):
             reason = "no reachable PostgreSQL server"
         elif not pg.detail.get("driver_installed"):
