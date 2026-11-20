@@ -1,6 +1,6 @@
-> **This copy is the CS-Agent-Tools bundle.** It is [Hayden Smith's Floorplan](https://github.com/haydenschmitty/floorplan) 0.6.1 (MIT) plus the map-first viewer changes and fixes listed under **0.6.2** in the [changelog](CHANGELOG.md): readable names when zoomed out, a tighter layout, outside services in columns, one title, a flows column and an embed mode. The bundle counts its own versions from there: its 0.6.2 is not the original’s 0.6.2. It installs from this repository (see [Install](#install)), and the setup guide is [docs/wiki/Floorplan.md](../../docs/wiki/Floorplan.md). Questions about this bundle go to [CS-Agent-Tools issues](https://github.com/CoreyScherrer/CS-Agent-Tools/issues). The live demo, the video and the Floorplan Cloud waitlist below are the original author's, and show the original viewer.
+> **This copy is the CS-Agent-Tools bundle.** It is [Hayden Smith's Floorplan](https://github.com/haydenschmitty/floorplan) 0.6.1 (MIT) plus the map-first viewer changes and fixes listed under **0.6.2** and **0.6.3** in the [changelog](CHANGELOG.md): readable names when zoomed out, a tighter layout, outside services in columns, one title, a flows column and an embed mode. The bundle counts its own versions from there: its 0.6.2 and 0.6.3 are not the original’s. It installs from this repository (see [Install](#install)), and the setup guide is [docs/wiki/Floorplan.md](../../docs/wiki/Floorplan.md). Questions about this bundle go to [CS-Agent-Tools issues](https://github.com/CoreyScherrer/CS-Agent-Tools/issues). The live demo, the video and the Floorplan Cloud waitlist below are the original author's, and show the original viewer.
 >
-> **Known gap:** the original has moved on to 0.7.3, and its 0.7.1 hardened the map against untrusted repositories. Those changes are not in this bundle yet, so map only code you trust. See [SECURITY.md](SECURITY.md).
+> **Known gap:** the original has moved on to 0.11.0 (as of 2026-11-19), and its 0.7.1 hardened the map against untrusted repositories. This bundle has its own fix for the one case its audit found (a file name that ran as script in the map), but not the rest: secrets written into descriptions are not hidden, and the map carries no content security policy. Nothing the original released after 0.6.1 is here either. So map only code you trust. See [SECURITY.md](SECURITY.md).
 
 <div align="center">
 
@@ -17,7 +17,7 @@ Claude or Codex reads your codebase and draws an interactive map of it. Every pa
 
 [![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-D97757?style=flat-square)](https://code.claude.com/docs/en/overview)
 [![Codex plugin](https://img.shields.io/badge/Codex-plugin-111?style=flat-square)](docs/codex.md)
-[![Version](https://img.shields.io/badge/version-0.6.2-111?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.3-111?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-111?style=flat-square)](LICENSE)
 [![Node 18+](https://img.shields.io/badge/node-%E2%89%A518-111?style=flat-square)](https://nodejs.org)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-111?style=flat-square)](#how-it-works)
