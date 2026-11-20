@@ -97,23 +97,36 @@ def _scrub_dsn(dsn):
     return _KV_PASSWORD.sub(lambda m: m.group(1) + _MASK, dsn)
 
 
+# A query pair anywhere in a URI: `?key=value` or `&key=value`. The value runs to
+# the next '&', so it may hold '@', '?', '#' or '/'.
+_URI_PAIR = re.compile(r"[?&]([^&?=]*)=([^&]*)")
+
+
 def _scrub_uri(dsn):
+    """Mask every span that could be a password, under any plausible reading.
+
+    A URI password can sit in the userinfo (`user:pw@host`) or in a query pair
+    (`?password=pw`), and '@', '?', '#' or '/' inside either one can move where
+    a parser thinks the parts begin. So both readings are taken from the raw
+    string and every span either one calls a password is masked. When they
+    disagree, more is hidden than strictly needed, never less.
+    """
     scheme, _, rest = dsn.partition("://")
-    # Userinfo: libpq takes everything before the last '@' as user[:password].
-    # Using the last '@' in the whole string means a password holding '@', '#',
-    # '/' or '?' is still covered; at worst more than the password is masked.
-    at = rest.rfind("@")
-    if at != -1 and ":" in rest[:at]:
-        user = rest[:at].split(":", 1)[0]
-        rest = user + ":" + _MASK + rest[at:]
-    # Query: from the first '?' after the userinfo ('#' is ordinary data to
-    # libpq). Any key that decodes to something ending in "password" is masked.
-    q = rest.find("?", rest.rfind("@") + 1)
-    if q != -1:
-        pairs = []
-        for pair in rest[q + 1:].split("&"):
-            key = pair.split("=", 1)[0]
-            secret = unquote(key).strip().lower().endswith("password")
-            pairs.append(key + "=" + _MASK if secret else pair)
-        rest = rest[:q + 1] + "&".join(pairs)
-    return scheme + "://" + rest
+    spans = []
+    # Userinfo: from the first ':' to the last '@' (libpq takes the last '@').
+    colon, at = rest.find(":"), rest.rfind("@")
+    if colon != -1 and colon < at:
+        spans.append((colon + 1, at))
+    # Query values whose key decodes to something ending in "password".
+    for m in _URI_PAIR.finditer(rest):
+        if unquote(m.group(1)).strip().lower().endswith("password"):
+            spans.append((m.start(2), m.end(2)))
+    out, pos = [], 0
+    for start, end in sorted(spans):
+        if end <= pos:
+            continue
+        start = max(start, pos)
+        out.append(rest[pos:start] + _MASK)
+        pos = end
+    out.append(rest[pos:])
+    return scheme + "://" + "".join(out)
