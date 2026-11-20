@@ -30,6 +30,18 @@ class ScrubDsnTests(unittest.TestCase):
         self.assertHidden("host=db password = 'my secret' dbname=ma",
                           "host=db password = *** dbname=ma", "secret")
 
+    def test_keyvalue_escaped_quote_inside_password(self):
+        self.assertHidden("password='it\\'s secret' host=db", "password=*** host=db", "secret")
+
+    def test_keyvalue_unterminated_quote_hides_the_rest(self):
+        self.assertHidden("host=db password='half secret", "host=db password=***", "secret")
+
+    def test_malformed_uri_hides_everything_after_the_scheme(self):
+        self.assertHidden("postgresql://me:hunter2@[::1/ma", "postgresql://***", "hunter2")
+
+    def test_uri_scheme_is_case_insensitive(self):
+        self.assertHidden("PostgreSQL://me:hunter2@db/ma", "postgresql://me:***@db/ma", "hunter2")
+
     def test_keyvalue_is_case_insensitive(self):
         self.assertHidden("PASSWORD=hunter2 host=db", "PASSWORD=*** host=db", "hunter2")
 
