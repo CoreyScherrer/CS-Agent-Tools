@@ -12,7 +12,7 @@
   const PLAN = !!SC.graph.meta.blueprint;
   const FIX = PLAN ? 'Resolve' : 'Fix';
   const CHECK = PLAN ? 'design review' : 'health check';
-  const ISSUES_URL = 'https://github.com/haydenschmitty/floorplan/issues/new';
+  const ISSUES_URL = 'https://github.com/CoreyScherrer/CS-Agent-Tools/issues/new';
 
   // ---------- "not a problem" ----------
   // Saved by serve.mjs to floorplan/health-dismissed.json (build folds it into graph.health.dismissed);
