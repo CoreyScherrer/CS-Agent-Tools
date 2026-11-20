@@ -36,11 +36,26 @@ class ScrubDsnTests(unittest.TestCase):
     def test_keyvalue_unterminated_quote_hides_the_rest(self):
         self.assertHidden("host=db password='half secret", "host=db password=***", "secret")
 
-    def test_malformed_uri_hides_everything_after_the_scheme(self):
-        self.assertHidden("postgresql://me:hunter2@[::1/ma", "postgresql://***", "hunter2")
+    def test_malformed_uri_still_hides_the_password(self):
+        self.assertHidden("postgresql://me:hunter2@[::1/ma", "postgresql://me:***@[::1/ma", "hunter2")
+
+    def test_uri_password_holding_hash_slash_or_question_mark(self):
+        # A web URL parser would end the authority at '#', '/' or '?' and print the rest.
+        for pw in ("pa#ss", "pa/ss", "pa?ss"):
+            self.assertHidden("postgresql://me:{}@db/ma".format(pw), "postgresql://me:***@db/ma", pw)
+
+    def test_uri_percent_encoded_password_key(self):
+        self.assertHidden("postgresql://db/ma?pass%77ord=hunter2", "postgresql://db/ma?pass%77ord=***", "hunter2")
+
+    def test_uri_hash_in_query_password(self):
+        self.assertHidden("postgresql://db/ma?password=hun#ter2&sslmode=require",
+                          "postgresql://db/ma?password=***&sslmode=require", "ter2")
 
     def test_uri_scheme_is_case_insensitive(self):
-        self.assertHidden("PostgreSQL://me:hunter2@db/ma", "postgresql://me:***@db/ma", "hunter2")
+        self.assertHidden("PostgreSQL://me:hunter2@db/ma", "PostgreSQL://me:***@db/ma", "hunter2")
+
+    def test_keyvalue_backslash_escaped_space_in_unquoted_password(self):
+        self.assertHidden("host=db password=hun\\ ter2 dbname=ma", "host=db password=*** dbname=ma", "ter2")
 
     def test_keyvalue_is_case_insensitive(self):
         self.assertHidden("PASSWORD=hunter2 host=db", "PASSWORD=*** host=db", "hunter2")
