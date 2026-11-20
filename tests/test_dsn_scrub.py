@@ -67,6 +67,17 @@ class ScrubDsnTests(unittest.TestCase):
         self.assertHidden("host=db sslpassword=hunter2", "host=db sslpassword=***", "hunter2")
         self.assertHidden("postgresql://db/ma?sslpassword=hunter2", "postgresql://db/ma?sslpassword=***", "hunter2")
 
+    def test_uri_at_sign_inside_query_password(self):
+        self.assertHidden("postgresql://db/ma?password=hun@ter2", "postgresql://db/ma?password=***", "ter2")
+
+    def test_uri_at_sign_in_another_query_value_still_hides_the_password(self):
+        out = _scrub_dsn("postgresql://me:hunter2@db/ma?application_name=a@b&password=s3cret")
+        self.assertNotIn("hunter2", out)
+        self.assertNotIn("s3cret", out)
+
+    def test_uri_query_value_holding_question_mark(self):
+        self.assertHidden("postgresql://db/ma?password=hun?ter2", "postgresql://db/ma?password=***", "ter2")
+
     def test_keyvalue_is_case_insensitive(self):
         self.assertHidden("PASSWORD=hunter2 host=db", "PASSWORD=*** host=db", "hunter2")
 
