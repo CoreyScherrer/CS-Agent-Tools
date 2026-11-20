@@ -1,11 +1,11 @@
-# Floorplan 0.6.3: SHA-256 of every file the plugin runs from.
+# Floorplan 0.6.4: SHA-256 of every file the plugin runs from.
 # Check an installed copy: clone this release, then run node tools/checksums.mjs --check <installed folder>.
 43adc6c187150c4b0a4841f0e7448381401be93ee65e2d212be4e7eeb67bb3e4  .agents/plugins/marketplace.json
 fdce61be9c420fd16b8cbbff629baa37e8d1096094b3e90bc5ecc0fe1ffc3a78  .claude-plugin/icon.png
 98cd297588a52fc7715d29ad10636f3224ee7a99bfbb94230315493dabc7147c  .claude-plugin/marketplace.json
-51bfe612e564642d09b5a8a1ae67939a05d90497e8d19e026f0a08a487892d47  .claude-plugin/plugin.json
+7eb9281560944efd49b824061a67a87aefc68ec80506e6d90edba62bbd8d7fcc  .claude-plugin/plugin.json
 7bdb74d57875b25ca9dcd367f79f92b9089f5f4b873bffec898cc6c3f0a84a68  .codex-plugin/icon.png
-bfc2f48be984428f42b744680a127ae8b02e847b0ced37106311c70c066f4e5d  .codex-plugin/plugin.json
+29ffbbf965ad98020e33c80168c080021d9c878fe409029cc558707d2cc27005  .codex-plugin/plugin.json
 e1cdfc2a2f1ae41796c8eae54eed099f95d09d25f2ec521742d3ab7a8aba1337  package.json
 6d800c7b4efbc11afb7dda4359ae99c09d9fc36d119460e7433ed92db33b7472  skills/floorplan/SKILL.md
 4dde86cace299094c246604badb73b605a10f47e01a72cc6746680788a7e20f9  skills/floorplan/agents/openai.yaml
@@ -17,7 +17,7 @@ c845547da7891198c6f9d83f555314ea11c3aabe138aa8541b58cdb10c65db7a  skills/floorpl
 82159aa9ae0fbd59ed62eebfafc4991652c1a9aeff2542be77ba41f806df46b7  skills/floorplan/assets/ui/05-theme.js
 b4d93bea27b570bc2d52f05e036a56f5dfd2b1ddee9c4b01188b9f9f61980140  skills/floorplan/assets/ui/06-blueprint.js
 c41b2ce2e0038cab208579eaeb541223d8175fade09ed360ba53a4c49956a9c3  skills/floorplan/assets/ui/10-glossary.js
-a09cd7cad26c981183f2352302a494e0a130e483e2c1001a9b7dbfd36e3439d9  skills/floorplan/assets/ui/20-health.js
+cafcc2d33bc8583c49c7c35848ddf606e9cd5e64dd87f0903d82aa2fd6df1745  skills/floorplan/assets/ui/20-health.js
 e326a65e6e92949391fcc4960b67c0b9340e8f1cbd6cf43333b1f530503401c1  skills/floorplan/assets/ui/25-recent.js
 25d6f28a4669a9d1939c7c3103f72068474b4f69124dec4011ba0458ee42ab11  skills/floorplan/assets/ui/30-screens.js
 6338de064403dbd087b47654181d1e2374b33690740b56706efc33c6eb27c2fd  skills/floorplan/assets/ui/40-tour.js
