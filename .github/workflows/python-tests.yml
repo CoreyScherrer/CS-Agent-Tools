@@ -1,0 +1,32 @@
+# Runs the Memory Archive's own tests (ma/, tests/) on every change that touches them. The
+# framework promises Python 3.9+ from the standard library only, so the oldest and a current
+# version both run, with nothing installed.
+name: Python tests
+
+on:
+  push:
+    branches: [main]
+    paths: ['ma/**', 'tests/**', '.github/workflows/python-tests.yml']
+  pull_request:
+    paths: ['ma/**', 'tests/**', '.github/workflows/python-tests.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.9', '3.13']
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m unittest discover -s tests -v

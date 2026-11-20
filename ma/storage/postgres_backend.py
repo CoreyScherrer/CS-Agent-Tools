@@ -70,13 +70,13 @@ class PostgresBackend(SQLBackend):
 
 _MASK = "***"
 
-# A key/value DSN's password, matched the way libpq reads values: quoted
+# A key/value DSN's password (or sslpassword), matched the way libpq reads values: quoted
 # ('my \'secret\'', spaces allowed) or unquoted, where a backslash escapes the
 # next character (`pass\ word` is one value). An unterminated quote masks
 # everything after it rather than leaking the tail.
 _KV_PASSWORD = re.compile(
-    r"""(\bpassword\s*=\s*)('(?:[^'\\]|\\.)*(?:'|$)|(?:\\.|[^\s\\])+\\?)""",
-    re.IGNORECASE,
+    r"""(\b\w*password\s*=\s*)('(?:[^'\\]|\\.)*(?:'|$)|(?:\\.|[^\s\\])+\\?)""",
+    re.IGNORECASE | re.DOTALL,  # a backslash escapes any character, newline included
 )
 _URI_SCHEMES = ("postgresql://", "postgres://")
 
@@ -106,12 +106,14 @@ def _scrub_uri(dsn):
     if at != -1 and ":" in rest[:at]:
         user = rest[:at].split(":", 1)[0]
         rest = user + ":" + _MASK + rest[at:]
-    # Query: everything after the first '?'. '#' is ordinary data to libpq.
-    head, sep, query = rest.partition("?")
-    if sep:
+    # Query: from the first '?' after the userinfo ('#' is ordinary data to
+    # libpq). Any key that decodes to something ending in "password" is masked.
+    q = rest.find("?", rest.rfind("@") + 1)
+    if q != -1:
         pairs = []
-        for pair in query.split("&"):
+        for pair in rest[q + 1:].split("&"):
             key = pair.split("=", 1)[0]
-            pairs.append(key + "=" + _MASK if unquote(key).strip().lower() == "password" else pair)
-        rest = head + "?" + "&".join(pairs)
+            secret = unquote(key).strip().lower().endswith("password")
+            pairs.append(key + "=" + _MASK if secret else pair)
+        rest = rest[:q + 1] + "&".join(pairs)
     return scheme + "://" + rest

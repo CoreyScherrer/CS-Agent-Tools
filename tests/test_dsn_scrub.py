@@ -57,6 +57,16 @@ class ScrubDsnTests(unittest.TestCase):
     def test_keyvalue_backslash_escaped_space_in_unquoted_password(self):
         self.assertHidden("host=db password=hun\\ ter2 dbname=ma", "host=db password=*** dbname=ma", "ter2")
 
+    def test_keyvalue_backslash_escaped_newline_in_unquoted_password(self):
+        self.assertHidden("host=db password=hun\\\nter2 dbname=ma", "host=db password=*** dbname=ma", "ter2")
+
+    def test_uri_question_mark_in_user_name_does_not_hide_the_query(self):
+        self.assertHidden("postgresql://u?x@db/ma?password=hunter2", "postgresql://u?x@db/ma?password=***", "hunter2")
+
+    def test_ssl_key_passphrase_is_hidden_too(self):
+        self.assertHidden("host=db sslpassword=hunter2", "host=db sslpassword=***", "hunter2")
+        self.assertHidden("postgresql://db/ma?sslpassword=hunter2", "postgresql://db/ma?sslpassword=***", "hunter2")
+
     def test_keyvalue_is_case_insensitive(self):
         self.assertHidden("PASSWORD=hunter2 host=db", "PASSWORD=*** host=db", "hunter2")
 
