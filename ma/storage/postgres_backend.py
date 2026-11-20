@@ -70,7 +70,7 @@ class PostgresBackend(SQLBackend):
 
 _MASK = "***"
 
-# A key/value DSN's password: `password=secret` or `password = 'my \\'secret\\''`.
+# A key/value DSN's password: `password=secret` or `password = 'my \'secret\''`.
 # Quoted values may hold spaces and backslash-escaped quotes (libpq rules). An
 # unterminated quote masks everything after it rather than leaking the tail.
 _KV_PASSWORD = re.compile(r"""(\bpassword\s*=\s*)('(?:[^'\\]|\\.)*(?:'|$)|\S+)""", re.IGNORECASE)
