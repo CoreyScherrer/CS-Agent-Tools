@@ -29,7 +29,7 @@ is Hayden Smith's open-source Floorplan (MIT), version 0.6.1, with changes to th
 viewer that put the map first: names you can read when zoomed out, a tighter
 layout, outside services in columns, one title, a flows column on the left, and an
 embed mode. Its [changelog](https://github.com/CoreyScherrer/CS-Agent-Tools/blob/main/tools/floorplan/CHANGELOG.md) lists each one
-under **0.6.2** and **0.6.3**, which are this bundle’s own version numbers and not the original’s.
+under **0.6.2**; **0.6.3** and **0.6.4** fix links and notes. These are this bundle’s own version numbers, not the original’s.
 Everything else is the original.
 
 **Known gap.** The original has since released 0.6.2 to 0.11.0 (as of 2026-11-19),
