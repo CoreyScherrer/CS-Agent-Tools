@@ -117,8 +117,6 @@ class TestReportFormatting(unittest.TestCase):
         self.assertIn("Blocking problems", doctor.format_report(probes, "sqlite", "x"))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TestPostgresProbeUsesConfiguredDsn(unittest.TestCase):
@@ -154,10 +152,26 @@ class TestPostgresProbeUsesConfiguredDsn(unittest.TestCase):
         self.assertNotIn("s3cret", probe.summary + repr(probe.detail))
         self.assertEqual(doctor.recommend_backend([probe])[0], "sqlite")
 
-    def test_dsn_host_and_port_are_probed(self):
-        with self.mock.patch.object(doctor, "_try_dsn", return_value=(True, "")):
-            doctor.probe_postgres("postgresql://u@db.internal:6543/x")
-        doctor.socket.create_connection.assert_called_with(("db.internal", 6543), timeout=2)
+    def test_configured_dsn_is_tested_by_the_driver_not_a_guessed_host(self):
+        # A web URL parser reads "me:12/ss@db" as host "me", port 12 (part of the
+        # password), and a key/value DSN has no URL host at all. Neither may be
+        # probed or printed: the driver connect decides.
+        for dsn in ("postgresql://me:12/ss@db/ma", "host=db.internal port=6543 password=12ss"):
+            with self.mock.patch.object(doctor, "_try_dsn", return_value=(False, "OperationalError")):
+                probe = doctor.probe_postgres(dsn)
+            doctor.socket.create_connection.assert_not_called()
+            self.assertNotIn("12", probe.summary + repr(probe.detail))
+            self.assertEqual(probe.status, doctor.WARN)
+
+    def test_configured_dsn_without_a_driver_says_so(self):
+        with self.mock.patch("ma.storage.postgres_backend.driver_available", return_value=False):
+            probe = doctor.probe_postgres("host=db password=s3cret")
+        self.assertEqual(probe.status, doctor.WARN)
+        self.assertIn("no psycopg driver", probe.summary)
+        self.assertNotIn("s3cret", probe.summary + repr(probe.detail))
+        backend, reason = doctor.recommend_backend([probe])
+        self.assertEqual(backend, "sqlite")
+        self.assertIn("no psycopg driver", reason)
 
     def test_no_dsn_and_no_psql_says_why(self):
         with self.mock.patch.object(doctor.shutil, "which", return_value=None):
@@ -177,3 +191,7 @@ class TestLocalConfigPermissions(unittest.TestCase):
             with mock.patch.object(config_mod, "LOCAL_CONFIG", path):
                 config_mod.save_local({"storage": {"postgres_dsn": "postgresql://u:pw@h/d"}})
             self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
+
+
+if __name__ == "__main__":
+    unittest.main()
