@@ -3,7 +3,7 @@
 useDefault = true
 
 [allowlist]
-description = "Floorplan's Health check has a test that builds a made-up private key ('MIIE' + 'abcd' repeated) to prove the check reports it. It is a fixture, not a key."
+description = "Floorplan's Health check has a test that builds made-up private keys ('MIIE' + 'abcd' repeated, plain and passphrase-protected) to prove the check reports the plain one and leaves the protected ones alone. They are fixtures, not keys."
 paths = ['''^tools/floorplan/tests/false-positives\.test\.mjs$''']
-regexes = ['''BEGIN RSA PRIVATE KEY-----\\n\$\{body\}''']
+regexes = ['''BEGIN (RSA|ENCRYPTED) PRIVATE KEY-----\\n\$\{body\}''']
 condition = "AND"

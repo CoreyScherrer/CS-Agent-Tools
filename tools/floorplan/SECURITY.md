@@ -1,6 +1,6 @@
 # Security policy
 
-> **This copy is the CS-Agent-Tools bundle** (its own version 0.6.3), built on Floorplan 0.6.1. Report problems with it through the
+> **This copy is the CS-Agent-Tools bundle** (its own version 0.6.4), built on Floorplan 0.6.1. Report problems with it through the
 > [CS-Agent-Tools repository](https://github.com/CoreyScherrer/CS-Agent-Tools): its **Security** tab, **Report a vulnerability**.
 >
 > **Known gap:** the original project has released 0.6.2 to 0.11.0 since this bundle was cut (as of 2026-11-19), and none of those releases is in it. Version 0.7.1 hardened

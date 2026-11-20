@@ -26,7 +26,28 @@ is not.** See [Data Boundary](docs/wiki/Data-Boundary.md).
 
 ---
 
-# Memory Archive Framework
+## Quick starts
+
+Floorplan, Memory Archive, Product Discovery and the Agent Skills have a short
+start below. The full setup for every tool, including the Mac Mini Web Server and
+the Slack Assistant, is its guide in the table above.
+
+## Floorplan
+
+An interactive map of a codebase in plain English, drawn by your AI agent. This
+is a bundled copy of [Hayden Smith's Floorplan](https://github.com/haydenschmitty/floorplan)
+(MIT) with viewer changes; the [guide](docs/wiki/Floorplan.md) says what differs
+and what the original has added since.
+
+```bash
+claude plugin marketplace add CoreyScherrer/CS-Agent-Tools
+claude plugin install floorplan@cs-agent-tools
+```
+
+Start a new Claude Code session in your project and ask for "a floorplan of this
+project". Needs Node.js 18 or newer.
+
+## Memory Archive
 
 Persistent memory for AI coding sessions. Captures decisions, learnings and
 context into a local database and injects the relevant parts back at the start of
@@ -36,7 +57,7 @@ Built for a machine whose capabilities you cannot verify in advance: it probes
 the environment rather than assuming one, and its default path needs nothing
 beyond Python 3.9+ from the standard library.
 
-## Setup
+### Setup
 
 ```bash
 git clone https://github.com/CoreyScherrer/CS-Agent-Tools.git memory-archive
@@ -53,7 +74,7 @@ and otherwise uses SQLite, which is fully supported rather than a fallback of
 last resort. `ma migrate --to postgres` moves the content later if the situation
 changes.
 
-## Daily use
+### Daily use
 
 ```bash
 # capture
@@ -72,7 +93,7 @@ Memory types: `decision` · `learning` · `pattern` · `context` · `preference`
 Entities: `person` · `system` · `item` (ticket/work item). They are created on
 first mention, so capture never stalls to pre-register anything.
 
-## How context reaches the model
+### How context reaches the model
 
 Three layers, degrading gracefully:
 
@@ -85,7 +106,7 @@ Three layers, degrading gracefully:
 The hook prints a distinctive banner so its *absence* is visible. Silent failure
 is how "the archive stopped working" usually presents.
 
-## The data boundary
+### The data boundary
 
 **The framework is shareable. What it captures is not.**
 
@@ -99,7 +120,7 @@ is enforced structurally, not by convention:
 Nothing in this framework makes an outbound network call. No summarization, no
 embeddings, no telemetry — captured content does not leave the machine.
 
-### Backup and cross-machine transfer
+#### Backup and cross-machine transfer
 
 Git is the wrong tool for moving an archive — a database is a binary blob that
 bloats history and cannot be removed once committed. Use export/import, which
@@ -114,7 +135,7 @@ Import is idempotent by id, so re-running it changes nothing. Memories,
 entities and their links all survive the round trip. Move the file the way you
 would move any work document.
 
-## Ranking
+### Ranking
 
 With no embeddings, recall quality is this scoring function:
 
@@ -126,7 +147,7 @@ Pinned memories always lead. Selection fills to a token budget, skipping
 oversized items so one long memory cannot crowd out everything below it. It is
 deterministic: same inputs, same ordering, verifiable without a model.
 
-## Storage
+### Storage
 
 Two backends behind one seam, both running the same conformance suite:
 
@@ -139,7 +160,7 @@ Two backends behind one seam, both running the same conformance suite:
 The schema uses only text, integer, real and JSON-encoded-as-text, so the same
 DDL runs on both.
 
-## Tests
+### Tests
 
 ```bash
 python3 -m unittest discover -s tests -t .
@@ -153,7 +174,7 @@ MA_TEST_POSTGRES_DSN="postgresql://user@localhost/ma_test" \
     python3 -m unittest discover -s tests -t .
 ```
 
-## Configuration
+### Configuration
 
 Precedence, lowest to highest: built-in defaults → `config.example.json` →
 `config.local.json` (gitignored, written by `doctor`) → environment variables
@@ -162,14 +183,14 @@ Precedence, lowest to highest: built-in defaults → `config.example.json` →
 
 Nothing about the host machine is hardcoded.
 
-## Scope
+### Scope
 
 Phase 1 is capture, retrieval and injection. Deliberately excluded — each
 additive later rather than a refactor: semantic search, LLM summarization,
 knowledge-graph edges, MCP server, background sync daemon, web UI, shared
 multi-user deployment.
 
-## Documentation
+### Documentation
 
 - **Wiki:** `docs/wiki/` — [Home](docs/wiki/Home.md) · [Setup](docs/wiki/Setup.md) ·
   [Daily Use](docs/wiki/Daily-Use.md) · [Data Boundary](docs/wiki/Data-Boundary.md) ·
@@ -185,7 +206,7 @@ initialised once through the web UI first).
 
 ---
 
-# Product Discovery Framework
+## Product Discovery
 
 _Masterful Product Swashbuckling_ — enterprise product discovery, from raw
 organizational information to artifacts a team can build from.
@@ -193,7 +214,7 @@ organizational information to artifacts a team can build from.
 Lives in [`product-discovery/`](product-discovery/). Self-contained plain files —
 no install, no dependencies beyond Python 3 for the linters.
 
-## What makes it different
+### What makes it different
 
 Most PM template libraries help you fill in a document. The document then reads as
 authoritative whether or not anything in it is true.
@@ -212,7 +233,7 @@ Four gates, at four layers, so no single failure is silent:
 | Adversarial critic | Pre-ship review | Reasoning gaps |
 | Structural lint | Scripts that exit nonzero | Placeholders, broken refs, decay |
 
-## The spine
+### The spine
 
 ```
 0 TRIAGE → 1 FRAME → 2 MINE → 3 DISCOVER → 4 DEFINE → 5 SPECIFY → 6 VALIDATE → 7 COMMUNICATE
@@ -224,7 +245,7 @@ already written down, and stakeholder patience is the binding constraint.
 
 25 core skills, 3 analytics-domain skills, 3 linters.
 
-## Quickstart
+### Quickstart
 
 ```bash
 cd product-discovery
@@ -244,7 +265,7 @@ python3 scripts/lint-skill.py .                              # the framework its
 first** — a complete FRAME + MINE pass that answers most format questions faster
 than the protocol docs do.
 
-## Data boundary
+### Data boundary
 
 Project state — `evidence/`, `assumptions.md`, `artifacts/` — is **work product**
 and never goes in this repo. Same rule as the memory archive. Projects live outside
@@ -252,7 +273,7 @@ the framework directory; `scripts/new-project.sh` scaffolds them elsewhere by de
 
 ---
 
-# Agent Skills
+## Agent Skills
 
 Portable working discipline for AI coding sessions, in [`skills/`](skills/). Independent of
 both frameworks above — install either, both, or neither.
@@ -266,7 +287,7 @@ Both encode the same underlying problem: **agent sessions are amnesiac, and the 
 written down to fix that decay silently.** One covers what to record; the other covers how
 to write rules that stay true as systems change.
 
-## Install
+### Install the skills
 
 ```bash
 cp -R skills/session-memory-discipline ~/.claude/skills/
