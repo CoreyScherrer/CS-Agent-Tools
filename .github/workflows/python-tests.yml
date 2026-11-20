@@ -1,6 +1,7 @@
 # Runs the Memory Archive's own tests (ma/, tests/) on every change that touches them. The
-# framework promises Python 3.9+ from the standard library only, so the oldest and a current
-# version both run, with nothing installed.
+# framework promises Python 3.9+ from the standard library only, so the oldest version the
+# runner offers and a current one both run, with nothing installed. GitHub's Ubuntu image has
+# no 3.9 (end of life), so 3.9 itself is checked by hand before a release.
 name: Python tests
 
 on:
@@ -21,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.9', '3.13']
+        python: ['3.10', '3.13']
     steps:
       - uses: actions/checkout@v7
         with:
