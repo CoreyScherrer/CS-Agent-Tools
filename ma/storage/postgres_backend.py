@@ -6,7 +6,7 @@ reported as a clear, actionable error rather than an ImportError at startup.
 """
 
 import re
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import unquote
 
 from .base import SQLBackend
 
@@ -70,10 +70,15 @@ class PostgresBackend(SQLBackend):
 
 _MASK = "***"
 
-# A key/value DSN's password: `password=secret` or `password = 'my \'secret\''`.
-# Quoted values may hold spaces and backslash-escaped quotes (libpq rules). An
-# unterminated quote masks everything after it rather than leaking the tail.
-_KV_PASSWORD = re.compile(r"""(\bpassword\s*=\s*)('(?:[^'\\]|\\.)*(?:'|$)|\S+)""", re.IGNORECASE)
+# A key/value DSN's password, matched the way libpq reads values: quoted
+# ('my \'secret\'', spaces allowed) or unquoted, where a backslash escapes the
+# next character (`pass\ word` is one value). An unterminated quote masks
+# everything after it rather than leaking the tail.
+_KV_PASSWORD = re.compile(
+    r"""(\bpassword\s*=\s*)('(?:[^'\\]|\\.)*(?:'|$)|(?:\\.|[^\s\\])+\\?)""",
+    re.IGNORECASE,
+)
+_URI_SCHEMES = ("postgresql://", "postgres://")
 
 
 def _scrub_dsn(dsn):
@@ -81,31 +86,32 @@ def _scrub_dsn(dsn):
 
     Covers both forms libpq accepts: a URI (``postgresql://user:pw@host/db``,
     including a ``password=`` query parameter) and a key/value string
-    (``host=db user=me password=pw``). Used before a DSN is printed or logged.
+    (``host=db user=me password=pw``). It splits the string the way libpq
+    does, not the way a web URL parser would, and when in doubt hides more
+    rather than less. Used before a DSN is printed or logged.
     """
     if not dsn:
         return dsn
-    if dsn.lower().startswith(("postgresql://", "postgres://")):
-        try:
-            return _scrub_uri(dsn)
-        except ValueError:
-            # urlsplit rejects some malformed URIs (an unclosed IPv6 bracket).
-            # Show nothing after the scheme rather than risk the password.
-            return dsn.split("://", 1)[0] + "://" + _MASK
+    if dsn.lower().startswith(_URI_SCHEMES):
+        return _scrub_uri(dsn)
     return _KV_PASSWORD.sub(lambda m: m.group(1) + _MASK, dsn)
 
 
 def _scrub_uri(dsn):
-    parts = urlsplit(dsn)
-    netloc = parts.netloc
-    if "@" in netloc:
-        userinfo, _, hosts = netloc.rpartition("@")
-        if ":" in userinfo:
-            userinfo = userinfo.split(":", 1)[0] + ":" + _MASK
-        netloc = userinfo + "@" + hosts
-    query = "&".join(
-        (pair.split("=", 1)[0] + "=" + _MASK)
-        if pair.split("=", 1)[0].lower() == "password" else pair
-        for pair in parts.query.split("&")
-    ) if parts.query else parts.query
-    return urlunsplit((parts.scheme, netloc, parts.path, query, parts.fragment))
+    scheme, _, rest = dsn.partition("://")
+    # Userinfo: libpq takes everything before the last '@' as user[:password].
+    # Using the last '@' in the whole string means a password holding '@', '#',
+    # '/' or '?' is still covered; at worst more than the password is masked.
+    at = rest.rfind("@")
+    if at != -1 and ":" in rest[:at]:
+        user = rest[:at].split(":", 1)[0]
+        rest = user + ":" + _MASK + rest[at:]
+    # Query: everything after the first '?'. '#' is ordinary data to libpq.
+    head, sep, query = rest.partition("?")
+    if sep:
+        pairs = []
+        for pair in query.split("&"):
+            key = pair.split("=", 1)[0]
+            pairs.append(key + "=" + _MASK if unquote(key).strip().lower() == "password" else pair)
+        rest = head + "?" + "&".join(pairs)
+    return scheme + "://" + rest
