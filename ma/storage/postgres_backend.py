@@ -70,9 +70,10 @@ class PostgresBackend(SQLBackend):
 
 _MASK = "***"
 
-# A key/value DSN's password: `password=secret` or `password = 'it''s secret'`.
-# Quoted values may hold spaces and backslash-escaped quotes (libpq rules).
-_KV_PASSWORD = re.compile(r"""(\bpassword\s*=\s*)('(?:[^'\\]|\\.)*'|\S+)""", re.IGNORECASE)
+# A key/value DSN's password: `password=secret` or `password = 'my \\'secret\\''`.
+# Quoted values may hold spaces and backslash-escaped quotes (libpq rules). An
+# unterminated quote masks everything after it rather than leaking the tail.
+_KV_PASSWORD = re.compile(r"""(\bpassword\s*=\s*)('(?:[^'\\]|\\.)*(?:'|$)|\S+)""", re.IGNORECASE)
 
 
 def _scrub_dsn(dsn):
@@ -84,8 +85,13 @@ def _scrub_dsn(dsn):
     """
     if not dsn:
         return dsn
-    if dsn.startswith(("postgresql://", "postgres://")):
-        return _scrub_uri(dsn)
+    if dsn.lower().startswith(("postgresql://", "postgres://")):
+        try:
+            return _scrub_uri(dsn)
+        except ValueError:
+            # urlsplit rejects some malformed URIs (an unclosed IPv6 bracket).
+            # Show nothing after the scheme rather than risk the password.
+            return dsn.split("://", 1)[0] + "://" + _MASK
     return _KV_PASSWORD.sub(lambda m: m.group(1) + _MASK, dsn)
 
 
