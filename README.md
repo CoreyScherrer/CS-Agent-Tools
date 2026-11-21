@@ -300,4 +300,11 @@ For a single project rather than globally, use `<project>/.claude/skills/` inste
 
 ## License
 
-Code and templates: MIT. Guides and documentation: CC BY 4.0. See [LICENSE](LICENSE).
+MIT, the whole repository: code, templates, guides and documentation. You may use, copy,
+change, share and sell any of it for free; keep the copyright notice. See [LICENSE](LICENSE).
+
+One exception: `tools/floorplan/` is a bundled copy of
+[Floorplan](https://github.com/haydenschmitty/floorplan) by Hayden Smith, also MIT, covered by
+its own [tools/floorplan/LICENSE](tools/floorplan/LICENSE). It includes elkjs (EPL-2.0) and the
+Inter and JetBrains Mono fonts (SIL OFL 1.1); their licenses are in
+`tools/floorplan/skills/floorplan/assets/vendor/`.
